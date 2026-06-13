@@ -299,8 +299,9 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x8ecae6);
 scene.fog = new THREE.Fog(0x8ecae6, 90, 320);
 
-const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 500);
-let camPos    = new THREE.Vector3(0, 7.5, -20);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
+// Camera: tight behind batter's right shoulder, looking toward pitcher
+let camPos    = new THREE.Vector3(0.7, 2.4, -3.8);
 let camTarget = new THREE.Vector3(0, 1.5, 25);
 
 // ── LIGHTING ───────────────────────────────────────────────────────────────────
@@ -477,30 +478,171 @@ function knockCan() {
 }
 
 // ── HUMANOID ───────────────────────────────────────────────────────────────────
-function makeHuman(color) {
+// ─── MATERIALS ────────────────────────────────────────────────
+const MAT = {
+  skin:    new THREE.MeshLambertMaterial({ color: 0xc8956c }),
+  skinD:   new THREE.MeshLambertMaterial({ color: 0x8b5e3c }),
+  white:   new THREE.MeshLambertMaterial({ color: 0xeeeeee }),
+  denim:   new THREE.MeshLambertMaterial({ color: 0x4a6fa5 }),  // jean shorts
+  denimD:  new THREE.MeshLambertMaterial({ color: 0x3a5a8a }),  // darker denim
+  black:   new THREE.MeshLambertMaterial({ color: 0x111111 }),
+  tshirt1: new THREE.MeshLambertMaterial({ color: 0xdddddd }),  // white cutoff
+  tshirt2: new THREE.MeshLambertMaterial({ color: 0xe05050 }),  // red cutoff
+  tshirt3: new THREE.MeshLambertMaterial({ color: 0x50a0e0 }),  // blue cutoff
+  tshirt4: new THREE.MeshLambertMaterial({ color: 0x50c870 }),  // green cutoff
+  tshirt5: new THREE.MeshLambertMaterial({ color: 0xe0a030 }),  // orange cutoff
+  brown:   new THREE.MeshLambertMaterial({ color: 0x8B4513 }),
+  sneaker: new THREE.MeshLambertMaterial({ color: 0xf0f0f0 }),  // white sneakers
+  sneakerS:new THREE.MeshLambertMaterial({ color: 0xcc2222 }),  // sneaker stripe
+};
+
+function mesh(geo, mat, cast=true) {
+  const m = new THREE.Mesh(geo, mat);
+  m.castShadow = cast;
+  return m;
+}
+
+// Build a detailed street-clothes humanoid. opts: { shirt, skin }
+// Everyone wears jean shorts and sneakers — it's stickball at the dam.
+function makeHuman(opts={}) {
+  const jerseyMat = opts.shirt || MAT.tshirt1;
+  const pantsMat  = opts.denim || MAT.denim;
+  const skinMat   = opts.skin  || MAT.skin;
+
   const g = new THREE.Group();
-  const m = new THREE.MeshLambertMaterial({ color });
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42,0.58,0.22), m); torso.position.y=1.08; torso.castShadow=true; g.add(torso);
-  const head  = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), m);   head.position.y=1.60;  head.castShadow=true;  g.add(head);
-  const aGeo  = new THREE.CylinderGeometry(0.06,0.06,0.52,6);
-  const armL  = new THREE.Mesh(aGeo,m); armL.position.set(-0.30,1.09,0); armL.rotation.z= 0.28; armL.castShadow=true; g.add(armL);
-  const armR  = new THREE.Mesh(aGeo,m); armR.position.set( 0.30,1.09,0); armR.rotation.z=-0.28; armR.castShadow=true; g.add(armR);
-  const lGeo  = new THREE.CylinderGeometry(0.075,0.065,0.56,6);
-  const legL  = new THREE.Mesh(lGeo,m); legL.position.set(-0.14,0.53,0); legL.castShadow=true; g.add(legL);
-  const legR  = new THREE.Mesh(lGeo,m); legR.position.set( 0.14,0.53,0); legR.castShadow=true; g.add(legR);
-  g.userData = { torso,head,armL,armR,legL,legR };
+
+  // === LEGS ===
+  const thighGeo = new THREE.CylinderGeometry(0.085,0.075,0.38,8);
+  const shinGeo  = new THREE.CylinderGeometry(0.065,0.055,0.36,8);
+  const footGeo  = new THREE.BoxGeometry(0.13,0.07,0.28);
+
+  // Left leg (group for knee pivot)
+  const legLG = new THREE.Group(); legLG.position.set(-0.13,0.76,0);
+  const thighL = mesh(thighGeo, pantsMat); thighL.position.y=-0.19; legLG.add(thighL);
+  const shinLG = new THREE.Group(); shinLG.position.y=-0.38;
+  const shinL  = mesh(shinGeo,  pantsMat); shinL.position.y=-0.18; shinLG.add(shinL);
+  // Sneaker (white with color stripe)
+  const footL  = mesh(footGeo, MAT.sneaker); footL.position.set(0,-0.38,0.06); shinLG.add(footL);
+  const stripeL= mesh(new THREE.BoxGeometry(0.135,0.025,0.15), MAT.sneakerS); stripeL.position.set(0,-0.34,0.06); shinLG.add(stripeL);
+  legLG.add(shinLG); legLG.userData = { shinG:shinLG };
+  g.add(legLG);
+
+  // Right leg
+  const legRG = new THREE.Group(); legRG.position.set( 0.13,0.76,0);
+  const thighR = mesh(thighGeo, pantsMat); thighR.position.y=-0.19; legRG.add(thighR);
+  const shinRG = new THREE.Group(); shinRG.position.y=-0.38;
+  const shinR  = mesh(shinGeo,  pantsMat); shinR.position.y=-0.18; shinRG.add(shinR);
+  const footR  = mesh(footGeo, MAT.sneaker); footR.position.set(0,-0.38,0.06); shinRG.add(footR);
+  const stripeR= mesh(new THREE.BoxGeometry(0.135,0.025,0.15), MAT.sneakerS); stripeR.position.set(0,-0.34,0.06); shinRG.add(stripeR);
+  legRG.add(shinRG); legRG.userData = { shinG:shinRG };
+  g.add(legRG);
+
+  // No belt — jean shorts have a waistband
+  const waistband = mesh(new THREE.CylinderGeometry(0.158,0.158,0.06,12), MAT.denimD);
+  waistband.position.y = 0.78; g.add(waistband);
+
+  // === TORSO ===
+  // Lower torso / hips
+  const hipsG = mesh(new THREE.BoxGeometry(0.30,0.18,0.20), pantsMat);
+  hipsG.position.y = 0.89; g.add(hipsG);
+  // Upper torso / jersey (tapered: wider at shoulders)
+  const torsoG = new THREE.Group(); torsoG.position.y = 1.14;
+  const jerseyMesh = mesh(new THREE.BoxGeometry(0.38,0.44,0.22), jerseyMat);
+  torsoG.add(jerseyMesh);
+  // Shoulder pads (wider at top)
+  const shoulderL = mesh(new THREE.BoxGeometry(0.10,0.10,0.22), jerseyMat);
+  shoulderL.position.set(-0.22,0.12,0); torsoG.add(shoulderL);
+  const shoulderR = mesh(new THREE.BoxGeometry(0.10,0.10,0.22), jerseyMat);
+  shoulderR.position.set( 0.22,0.12,0); torsoG.add(shoulderR);
+  g.add(torsoG);
+
+  // === NECK ===
+  const neck = mesh(new THREE.CylinderGeometry(0.075,0.08,0.12,8), skinMat);
+  neck.position.y = 1.41; g.add(neck);
+
+  // === HEAD ===
+  const headG = new THREE.Group(); headG.position.y = 1.64;
+  // Main head (slightly flattened sphere)
+  const headMesh = mesh(new THREE.SphereGeometry(0.175,12,10), skinMat);
+  headMesh.scale.y = 1.12; headG.add(headMesh);
+  // Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.028,6,6);
+  const eyeL = mesh(eyeGeo, MAT.black, false); eyeL.position.set(-0.07,0.02,0.155); headG.add(eyeL);
+  const eyeR = mesh(eyeGeo, MAT.black, false); eyeR.position.set( 0.07,0.02,0.155); headG.add(eyeR);
+  // Nose
+  const nose = mesh(new THREE.BoxGeometry(0.025,0.025,0.04), skinMat, false);
+  nose.position.set(0,-0.02,0.175); headG.add(nose);
+  // Mouth line
+  const mouth = mesh(new THREE.BoxGeometry(0.06,0.012,0.01), MAT.black, false);
+  mouth.position.set(0,-0.06,0.172); headG.add(mouth);
+  // Ear L
+  const earL = mesh(new THREE.SphereGeometry(0.035,6,6), skinMat); earL.scale.z=0.5; earL.position.set(-0.175,0,0); headG.add(earL);
+  const earR = mesh(new THREE.SphereGeometry(0.035,6,6), skinMat); earR.scale.z=0.5; earR.position.set( 0.175,0,0); headG.add(earR);
+  g.add(headG);
+
+  // === BASEBALL CAP (street style — some backwards) ===
+  const capG = new THREE.Group(); capG.position.y = 1.73;
+  const capMat = opts.cap || MAT.black;
+  const dome = mesh(new THREE.SphereGeometry(0.192,12,8,0,Math.PI*2,0,Math.PI*0.52), capMat);
+  dome.rotation.x = -0.08; capG.add(dome);
+  // Brim — forwards or backwards based on opts.capBack
+  const brimAngle = opts.capBack ? Math.PI : 0;
+  const brim = mesh(new THREE.CylinderGeometry(0.025,0.24,0.038,12,1,false,brimAngle+Math.PI*0.25,Math.PI*1.0), capMat);
+  brim.position.z = opts.capBack ? -0.04 : 0.04; brim.rotation.x = 0.08; capG.add(brim);
+  g.add(capG);
+
+  // === ARMS ===
+  const upperArmGeo = new THREE.CylinderGeometry(0.07,0.063,0.30,8);
+  const forearmGeo  = new THREE.CylinderGeometry(0.055,0.048,0.28,8);
+  const handGeo     = new THREE.BoxGeometry(0.09,0.09,0.07);
+
+  // Left arm (pivot at shoulder)
+  const armLG = new THREE.Group(); armLG.position.set(-0.24,1.30,0);
+  const uArmL = mesh(upperArmGeo, jerseyMat); uArmL.position.y=-0.15; armLG.add(uArmL);
+  const elbowLG = new THREE.Group(); elbowLG.position.y=-0.30;
+  const fArmL  = mesh(forearmGeo, skinMat); fArmL.position.y=-0.14; elbowLG.add(fArmL);
+  const handL  = mesh(handGeo, skinMat); handL.position.y=-0.29; elbowLG.add(handL);
+  armLG.add(elbowLG); armLG.userData = { elbowG:elbowLG };
+  g.add(armLG);
+
+  // Right arm (pivot at shoulder)
+  const armRG = new THREE.Group(); armRG.position.set( 0.24,1.30,0);
+  const uArmR = mesh(upperArmGeo, jerseyMat); uArmR.position.y=-0.15; armRG.add(uArmR);
+  const elbowRG = new THREE.Group(); elbowRG.position.y=-0.30;
+  const fArmR  = mesh(forearmGeo, skinMat); fArmR.position.y=-0.14; elbowRG.add(fArmR);
+  const handR  = mesh(handGeo, skinMat); handR.position.y=-0.29; elbowRG.add(handR);
+  armRG.add(elbowRG); armRG.userData = { elbowG:elbowRG };
+  g.add(armRG);
+
+  g.userData = { headG, capG, torsoG, armLG, armRG, legLG, legRG, skinMat, jerseyMat };
   return g;
+}
+
+function makeHumanOld(color) {
+  // thin wrapper so old call sites still work
+  return makeHuman({ jersey: new THREE.MeshLambertMaterial({color}), pants: MAT.gray });
 }
 
 // Batter
 let batter = null;
+const SHIRT_COLORS = [MAT.tshirt1, MAT.tshirt2, MAT.tshirt3, MAT.tshirt4, MAT.tshirt5];
 function createBatter() {
   if (batter) scene.remove(batter);
-  batter = makeHuman(0xc8a880);
+  batter = makeHuman({ shirt: MAT.tshirt2, cap: MAT.black, capBack: false });
+  // Batting stance: turn body sideways to face pitcher
   batter.position.set(0,0,-1.0);
+  batter.rotation.y = -Math.PI * 0.15; // slight open stance
+  // Raise arms into ready position
+  batter.userData.armRG.rotation.z = -0.9;
+  batter.userData.armRG.rotation.x = -0.3;
+  batter.userData.armLG.rotation.z =  0.6;
+  batter.userData.armLG.rotation.x = -0.5;
+  // Bend knees slightly
+  batter.userData.legLG.rotation.x = 0.18;
+  batter.userData.legRG.rotation.x = 0.12;
+  // Bat
   const bat = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.018,0.034,1.16,8),
-    new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+    new THREE.CylinderGeometry(0.018,0.034,1.16,8), MAT.brown
   );
   bat.castShadow = true;
   bat.position.set(0.48,1.35,0.1);
@@ -518,16 +660,16 @@ function swingAnim(p) {
   bat.rotation.z = Math.PI/2+a;
   bat.position.x = 0.5*Math.cos(a-0.2);
   bat.position.z = 0.5*Math.sin(a-0.2)*-1;
-  batter.userData.armR.rotation.z = -0.28+a*0.55;
-  batter.userData.armL.rotation.z =  0.28+a*0.55;
+  if(batter.userData.armRG) batter.userData.armRG.rotation.z = -0.9+a*0.55;
+  if(batter.userData.armLG) batter.userData.armLG.rotation.z =  0.6+a*0.55;
 }
 function resetBatter() {
   if (!batter) return;
   const bat = batter.userData.bat;
   bat.position.set(0.48,1.35,0.1);
   bat.rotation.set(0.25,0,Math.PI/2);
-  batter.userData.armR.rotation.set(0,0,-0.28);
-  batter.userData.armL.rotation.set(0,0, 0.28);
+  if(batter.userData.armRG) { batter.userData.armRG.rotation.set(-0.3,0,-0.9); }
+  if(batter.userData.armLG) { batter.userData.armLG.rotation.set(-0.5,0, 0.6); }
   batter.userData.swingProg = 0;
   batter.userData.swinging  = false;
 }
@@ -536,7 +678,7 @@ function resetBatter() {
 let pitcher = null;
 function createPitcher() {
   if (pitcher) scene.remove(pitcher);
-  pitcher = makeHuman(0xc8a880);
+  pitcher = makeHuman({ shirt: MAT.tshirt3, cap: MAT.black, capBack: true });
   pitcher.position.set(0,0,PITCH_DIST);
   pitcher.rotation.y = Math.PI;
   pitcher.userData.pitchProg = 0;
@@ -546,14 +688,13 @@ function createPitcher() {
 function pitchAnim(p) {
   if (!pitcher) return;
   const w = Math.sin(p*Math.PI);
-  pitcher.userData.armR.rotation.x = -Math.PI*p*0.9;
-  pitcher.userData.armR.rotation.z = -0.28-w*1.1;
-  pitcher.userData.armL.rotation.x =  w*0.4;
+  if(pitcher.userData.armRG){ pitcher.userData.armRG.rotation.x = -Math.PI*p*0.9; pitcher.userData.armRG.rotation.z = -0.28-w*1.1; }
+  if(pitcher.userData.armLG){ pitcher.userData.armLG.rotation.x =  w*0.4; }
 }
 function resetPitcher() {
   if (!pitcher) return;
-  pitcher.userData.armR.rotation.set(0,0,-0.28);
-  pitcher.userData.armL.rotation.set(0,0, 0.28);
+  if(pitcher.userData.armRG) pitcher.userData.armRG.rotation.set(0,0,-0.28);
+  if(pitcher.userData.armLG) pitcher.userData.armLG.rotation.set(0,0, 0.28);
   pitcher.userData.pitchProg = 0;
   pitcher.userData.pitching  = false;
 }
@@ -573,7 +714,7 @@ function createDefs(count) {
   defs=[];
   for(let i=0;i<Math.min(count,DEF_POS.length);i++){
     const p=DEF_POS[i];
-    const d=makeHuman(0x2255aa);
+    const d=makeHuman({ shirt: SHIRT_COLORS[i % SHIRT_COLORS.length], cap: MAT.black, capBack: (i%2===1) });
     d.position.set(p.x,0,p.z);
     d.rotation.y=Math.PI;
     d.userData.hx=p.x; d.userData.hz=p.z;
@@ -960,8 +1101,9 @@ function updateCam(dt){
     dp=new THREE.Vector3(bp.x*0.3, bp.y+4.5, bp.z-10);
     dt2=bp.clone();
   } else {
-    dp=new THREE.Vector3(0,7.5,-20);
-    dt2=new THREE.Vector3(0,1.5,25);
+    // Tight behind-the-batter view: right shoulder, looking toward pitcher
+    dp=new THREE.Vector3(0.7, 2.4, -3.8);
+    dt2=new THREE.Vector3(0,1.6,PITCH_DIST+8);
   }
   const a=Math.min(1,3.5*dt);
   camPos.lerp(dp,a);
@@ -978,7 +1120,7 @@ document.addEventListener('keydown',e=>{
     else if(GS.phase==='pitching') handleSwing();
   }
   if(e.code==='KeyC'){ GS.camMode=GS.camMode==='plate'?'follow':'plate'; }
-  if(e.code==='KeyR'){ GS.camMode='plate'; camPos.set(0,7.5,-20); camTarget.set(0,1.5,25); }
+  if(e.code==='KeyR'){ GS.camMode='plate'; camPos.set(0.7,2.4,-3.8); camTarget.set(0,1.6,PITCH_DIST+8); }
 });
 renderer.domElement.addEventListener('click',()=>{
   if(GS.phase==='ready'){startPitch();document.getElementById('phase-hint').style.display='none';}
