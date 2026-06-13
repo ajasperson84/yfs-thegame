@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YFS Stickball — Sepulveda Dam</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  user-select: none;
+}
+canvas { display: block; }
+#overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px; z-index: 100;
+}
+#overlay h1 {
+  font-size: 3rem; color: #f0c040;
+  letter-spacing: 6px; text-shadow: 0 0 20px #f0c04088;
+}
+#overlay h2 { color: #888; font-size: 1rem; letter-spacing: 3px; }
+.setup-form {
+  display: flex; flex-direction: column; gap: 14px;
+  width: 380px; background: #161b22;
+  border: 1px solid #333; border-radius: 8px; padding: 24px;
+}
+.setup-form .row { display: flex; gap: 14px; }
+.setup-form .field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.setup-form label { color: #888; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; }
+.setup-form input, .setup-form select {
+  background: #0d1117; border: 1px solid #444; color: #e6edf3;
+  padding: 8px 10px; border-radius: 4px; font-family: inherit;
+  font-size: 0.95rem; width: 100%;
+}
+.setup-form input:focus, .setup-form select:focus {
+  outline: none; border-color: #f0c040;
+}
+.rules-box {
+  background: #0d1117; border: 1px solid #2a2a2a;
+  border-radius: 4px; padding: 12px; font-size: 0.75rem;
+  color: #777; line-height: 1.7;
+}
+.rules-box strong { color: #aaa; }
+button.play-btn {
+  padding: 14px; background: #f0c040; color: #000;
+  border: none; font-size: 1.1rem; font-weight: bold;
+  border-radius: 4px; cursor: pointer; font-family: inherit;
+  letter-spacing: 3px; margin-top: 4px;
+  transition: background 0.15s;
+}
+button.play-btn:hover { background: #ffe066; }
+#hud {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 52px;
+  background: #0d1117; border-top: 1px solid #222;
+  display: none; align-items: center; padding: 0 24px; gap: 20px;
+  font-size: 0.85rem; z-index: 50;
+}
+.hud-group { display: flex; flex-direction: column; align-items: center; }
+.hud-label { color: #555; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; }
+.hud-val { color: #e6edf3; font-size: 1.05rem; font-weight: bold; }
+.hud-sep { color: #333; font-size: 1.4rem; margin: 0 4px; }
+.bases-display { display: flex; gap: 3px; align-items: center; }
+.base-diamond {
+  width: 13px; height: 13px; background: #222;
+  transform: rotate(45deg); border: 1px solid #444;
+  transition: background 0.2s;
+}
+.base-diamond.on { background: #f0c040; border-color: #f0c040; }
+#prompt {
+  position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+  color: #f0c040; font-size: 1rem; font-weight: bold; letter-spacing: 2px;
+  z-index: 50; display: none; text-align: center;
+  text-shadow: 0 0 10px #f0c04088;
+}
+#flash {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.88); border: 2px solid #f0c040;
+  color: #fff; padding: 18px 36px; border-radius: 8px;
+  font-size: 1.6rem; font-weight: bold; text-align: center;
+  z-index: 60; display: none; pointer-events: none;
+  min-width: 280px;
+}
+#flash .sub { font-size: 0.9rem; color: #aaa; margin-top: 6px; font-weight: normal; }
+#gameover {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; gap: 20px; z-index: 200;
+}
+#gameover h1 { font-size: 2.5rem; color: #f0c040; letter-spacing: 4px; }
+#gameover .final { font-size: 2rem; color: #e6edf3; }
+#gameover .winner { font-size: 1.2rem; color: #f0c040; letter-spacing: 2px; }
+#gameover button {
+  padding: 12px 32px; background: #f0c040; color: #000;
+  border: none; font-size: 1rem; font-weight: bold;
+  border-radius: 4px; cursor: pointer; font-family: inherit;
+  letter-spacing: 2px; margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <h1>YFS STICKBALL</h1>
+  <h2>SEPULVEDA DAM SPILLWAY · LOS ANGELES</h2>
+  <div class="setup-form">
+    <div class="row">
+      <div class="field">
+        <label>Home Team</label>
+        <input type="text" id="home-name" value="Home" maxlength="10">
+      </div>
+      <div class="field">
+        <label>Away Team</label>
+        <input type="text" id="away-name" value="Away" maxlength="10">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Players / Team</label>
+        <select id="player-count">
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Defenders</label>
+        <select id="def-count">
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
+    </div>
+    <div class="rules-box">
+      <strong>Controls:</strong> Press <strong>SPACE</strong> or <strong>click</strong> to swing.<br>
+      <strong>Timing:</strong> Swing as the ball reaches the plate.<br>
+      <strong>3 pitches</strong> per at-bat · Foul on 3rd = OUT<br>
+      <strong>Pool:</strong> Ball must leave the pool to be in play.
+    </div>
+    <button class="play-btn" onclick="startGame()">PLAY BALL</button>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="hud-group">
+    <div class="hud-label">Inning</div>
+    <div class="hud-val" id="h-inning">1</div>
+  </div>
+  <div class="hud-group">
+    <div class="hud-label">Half</div>
+    <div class="hud-val" id="h-half">▲ TOP</div>
+  </div>
+  <div class="hud-group">
+    <div class="hud-label">Outs</div>
+    <div class="hud-val" id="h-outs">0</div>
+  </div>
+  <div class="hud-group">
+    <div class="hud-label">Pitch</div>
+    <div class="hud-val" id="h-pitch">1 / 3</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hud-group">
+    <div class="hud-label" id="h-away-name">Away</div>
+    <div class="hud-val" id="h-away-score">0</div>
+  </div>
+  <div class="hud-sep">—</div>
+  <div class="hud-group">
+    <div class="hud-label" id="h-home-name">Home</div>
+    <div class="hud-val" id="h-home-score">0</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hud-group">
+    <div class="hud-label">Runners</div>
+    <div class="bases-display">
+      <div class="base-diamond" id="b3"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin:0 2px">
+        <div class="base-diamond" id="b2"></div>
+        <div style="width:13px;height:13px"></div>
+      </div>
+      <div class="base-diamond" id="b1"></div>
+    </div>
+  </div>
+  <div class="hud-group" style="min-width:120px">
+    <div class="hud-label">Batting</div>
+    <div class="hud-val" id="h-batting">—</div>
+  </div>
+</div>
+
+<div id="prompt"></div>
+<div id="flash"></div>
+
+<div id="gameover">
+  <h1>GAME OVER</h1>
+  <div class="final" id="go-final"></div>
+  <div class="winner" id="go-winner"></div>
+  <button onclick="location.reload()">PLAY AGAIN</button>
+</div>
+
+<script>
+'use strict';
+
+// ================================================================
+// CANVAS + RESIZE
+// ================================================================
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ================================================================
+// FIELD GEOMETRY
+// ================================================================
+const S   = 1.35;            // pixels per foot
+const I2  = 1 / Math.SQRT2; // cos/sin of 45°
+
+function home() { return { x: canvas.width / 2, y: canvas.height - 110 }; }
+
+function fieldVerts() {
+  const H = home(), d = 200 * S * I2;
+  return {
+    home:  { x: H.x,     y: H.y     },
+    left:  { x: H.x - d, y: H.y - d },
+    right: { x: H.x + d, y: H.y - d },
+    top:   { x: H.x,     y: H.y - 2*d }
+  };
+}
+
+function poolVerts() {
+  const H = home(), d = 70 * S * I2;
+  return {
+    home:  { x: H.x,     y: H.y     },
+    left:  { x: H.x - d, y: H.y - d },
+    right: { x: H.x + d, y: H.y - d },
+    top:   { x: H.x,     y: H.y - 2*d }
+  };
+}
+
+function pitcherPos() {
+  const H = home();
+  return { x: H.x, y: H.y - 40 * S };
+}
+
+function canPos() {
+  const H = home();
+  return { x: H.x + 8, y: H.y - 58 * S };
+}
+
+// Diamond containment: |dx/h| + |dy/h| <= 1 where center is at midpoint of top/bottom verts
+function inDiamond(cx, cy, halfD, x, y) {
+  return (Math.abs(x - cx) + Math.abs(y - cy)) <= halfD;
+}
+
+function ptInPool(x, y) {
+  const H = home();
+  const halfD = 70 * S * I2;
+  const cy = H.y - halfD;
+  return inDiamond(H.x, cy, halfD, x, y);
+}
+
+function ptInField(x, y) {
+  const H = home();
+  const halfD = 200 * S * I2;
+  const cy = H.y - halfD;
+  return inDiamond(H.x, cy, halfD, x, y);
+}
+
+function ptInOutfield(x, y) {
+  return ptInField(x, y) && !ptInPool(x, y);
+}
+
+// Check if a point is near (within threshold) the outer wall
+function nearOuterWall(x, y, thresh = 12) {
+  const H = home();
+  const halfD = 200 * S * I2;
+  const cy = H.y - halfD;
+  const r = (Math.abs(x - H.x) + Math.abs(y - cy)) / halfD;
+  return r >= (1 - thresh / (halfD)) && r <= 1.0;
+}
+
+// Random point inside the outfield, biased by angle from home
+function randomOutfieldPoint(angleDeg, distFraction = 0.7) {
+  const H = home();
+  const P = poolVerts();
+  const F = fieldVerts();
+  // angle 0 = straight to center (up), -90 = left, +90 = right
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  // Pool line is at ~70ft, outer wall at 200ft, pick in between
+  const poolDist = 70 * S;
+  const outerDist = 190 * S;
+  const dist = poolDist + distFraction * (outerDist - poolDist);
+  const x = H.x + dist * Math.cos(rad);
+  const y = H.y - dist * Math.sin(Math.PI/2 + angleDeg * Math.PI/180);
+  // Clamp into field
+  return { x: H.x + dist * Math.cos(rad), y: H.y + dist * Math.sin(rad) };
+}
+
+// Better: compute landing position from home, angle (0=up/center, negative=left, positive=right), distance in ft
+function landingPos(angleDeg, distFt) {
+  const H = home();
+  // 0° = straight up, +° = right, -° = left (screen coords: up = negative y)
+  const rad = angleDeg * Math.PI / 180;
+  return {
+    x: H.x + Math.sin(rad) * distFt * S,
+    y: H.y - Math.cos(rad) * distFt * S
+  };
+}
+
+// ================================================================
+// GAME STATE
+// ================================================================
+let G = null; // game object
+
+const PHASE = {
+  READY: 'ready',
+  PITCHING: 'pitching',
+  BALL_FLIGHT: 'ball_flight',
+  RESULT: 'result',
+  INNING_BREAK: 'inning_break',
+  GAME_OVER: 'game_over',
+  AUTO_BAT: 'auto_bat',
+};
+
+function newGame(homeTeam, awayTeam, playerCount, defCount) {
+  return {
+    homeTeam, awayTeam, playerCount, defCount,
+    inning: 1,         // 1-9
+    half: 0,           // 0=top(away bats), 1=bottom(home bats)
+    outs: 0,
+    score: [0, 0],     // [home, away]
+    runners: [false, false, false], // 1st, 2nd, 3rd
+    pitchNum: 1,       // 1, 2, or 3
+    phase: PHASE.READY,
+    // Animation state
+    ball: null,        // {x, y, tx, ty, startX, startY, t, dur, type:'fly'|'ground'|'miss'}
+    defenders: [],     // [{x, y, tx, ty, speed}]
+    canKnocked: false,
+    pendingResult: null,
+    resultTimer: 0,
+    // Pitch mechanic
+    pitchStart: 0,
+    pitchDur: 850,     // ms for ball to reach plate
+    swung: false,
+    // Batter rotation
+    batterIdx: 0,
+    // Player controls home team (half=1). Away team is CPU-simulated.
+    playerHalf: 1,
+    // Last play info
+    lastPlay: '',
+  };
+}
+
+// ================================================================
+// RUNNER / SCORING HELPERS
+// ================================================================
+function advanceRunners(bases) {
+  // Advance all ghost runners by `bases` bases. Return runs scored.
+  let runs = 0;
+  let next = [false, false, false];
+  // Check who scores
+  for (let b = 0; b < 3; b++) {
+    if (G.runners[b]) {
+      const newBase = b + 1 + bases; // 0-indexed: b+1 = 1st..3rd, newBase is new position
+      if (newBase >= 3) runs++;
+      else next[newBase] = true;
+    }
+  }
+  // Batter advances `bases`
+  const batterBase = bases - 1; // 0=1st, 1=2nd, 2=3rd
+  if (batterBase < 3) next[batterBase] = true;
+  else runs++;
+  G.runners = next;
+  return runs;
+}
+
+// ================================================================
+// DEFENDER AI
+// ================================================================
+function initDefenders(count) {
+  const H = home();
+  const F = fieldVerts();
+  const P = poolVerts();
+  const midY = (P.top.y + F.top.y) / 2;
+  // Spread defenders across outfield
+  const defenders = [];
+  for (let i = 0; i < count; i++) {
+    const frac = (i + 0.5) / count;
+    // At midY, field spans from left side to right side
+    // field left boundary at midY: field.left to field.top line
+    const t = (midY - F.left.y) / (F.top.y - F.left.y);
+    const xLeft  = F.left.x  + t * (F.top.x - F.left.x);
+    const xRight = F.right.x + t * (F.top.x - F.right.x);
+    const x = xLeft + frac * (xRight - xLeft);
+    const yOff = (Math.random() - 0.5) * 60;
+    defenders.push({ x, y: midY + yOff, tx: x, ty: midY + yOff, speed: 210 });
+  }
+  return defenders;
+}
+
+function sendDefenders(landX, landY) {
+  // Send all defenders toward the landing point (they compete)
+  for (const d of G.defenders) {
+    // Add some variance so they don't all go to same spot
+    const jitter = 30;
+    d.tx = landX + (Math.random() - 0.5) * jitter;
+    d.ty = landY + (Math.random() - 0.5) * jitter;
+  }
+}
+
+function updateDefenders(dt) {
+  for (const d of G.defenders) {
+    const dx = d.tx - d.x;
+    const dy = d.ty - d.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > 2) {
+      const move = d.speed * dt;
+      d.x += (dx / dist) * Math.min(move, dist);
+      d.y += (dy / dist) * Math.min(move, dist);
+    }
+  }
+}
+
+// Did any defender catch it (for fly balls)?
+function defenderCatches(landX, landY, flightTime) {
+  // flight time in seconds. Defender must reach the spot before ball lands.
+  for (const d of G.defenders) {
+    const dx = landX - d.x;
+    const dy = landY - d.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const timeNeeded = dist / d.speed;
+    if (timeNeeded <= flightTime * 0.9) return true;
+  }
+  return false;
+}
+
+// Did any defender field a ground ball rolling in the outfield?
+function defenderFieldsGrounder(landX, landY, rollTime) {
+  for (const d of G.defenders) {
+    const dx = landX - d.x;
+    const dy = landY - d.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const timeNeeded = dist / d.speed;
+    if (timeNeeded <= rollTime * 0.85) return true;
+  }
+  return false;
+}
+
+// ================================================================
+// HIT RESOLUTION
+// ================================================================
+function resolveSwing(swingMs) {
+  const diff = swingMs - G.pitchDur; // ms from perfect moment
+  const absDiff = Math.abs(diff);
+
+  // Timing quality
+  let quality;
+  if (absDiff < 90)       quality = 'perfect';
+  else if (absDiff < 200) quality = 'good';
+  else if (absDiff < 340) quality = 'decent';
+  else                    quality = 'miss';
+
+  // Pull direction: early swing (diff < 0) = pull (right for RH batter = +angle)
+  // late swing (diff > 0) = opposite field (negative angle = left)
+  const dirBias = -(diff / 340) * 40; // degrees, ±40 max
+  const spreadDeg = quality === 'perfect' ? 25 : quality === 'good' ? 35 : 55;
+  const angleDeg = dirBias + (Math.random() - 0.5) * spreadDeg; // -90 to +90 range, 0=center
+
+  G.pitchNum++;
+
+  if (quality === 'miss') {
+    return handleMiss();
+  }
+
+  const r = Math.random();
+
+  if (quality === 'perfect') {
+    if (r < 0.12)       return handleHR(angleDeg);
+    else if (r < 0.25)  return handleTriple(angleDeg);
+    else if (r < 0.48)  return handleDouble(angleDeg);
+    else if (r < 0.78)  return handleFlyBall('single', angleDeg);
+    else                return handleGroundBall(angleDeg);
+  } else if (quality === 'good') {
+    if (r < 0.04)       return handleHR(angleDeg);
+    else if (r < 0.12)  return handleTriple(angleDeg);
+    else if (r < 0.28)  return handleDouble(angleDeg);
+    else if (r < 0.58)  return handleFlyBall('single', angleDeg);
+    else if (r < 0.75)  return handleGroundBall(angleDeg);
+    else if (r < 0.88)  return handleFoulFly(angleDeg);
+    else                return handleFoulGround(angleDeg);
+  } else {
+    // decent
+    if (r < 0.02)       return handleDouble(angleDeg);
+    else if (r < 0.2)   return handleFlyBall('single', angleDeg);
+    else if (r < 0.45)  return handleGroundBall(angleDeg);
+    else if (r < 0.72)  return handleFoulFly(angleDeg);
+    else                return handleFoulGround(angleDeg);
+  }
+}
+
+function handleMiss() {
+  showBallMiss();
+  if (G.pitchNum > 3) {
+    queueResult('MISS — OUT', '', true);
+  } else {
+    queueResult('MISS', `Pitch ${G.pitchNum} of 3`, false);
+  }
+}
+
+function handleFoulFly(angle) {
+  const H = home();
+  const dist = 30 + Math.random() * 20;
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  showBallFlight(lx, ly, 0.7, 'fly');
+  if (G.pitchNum > 3) {
+    queueResult('FOUL — OUT', 'Foul on 3rd pitch', true);
+  } else {
+    queueResult('FOUL', `Pitch ${G.pitchNum} of 3`, false);
+  }
+}
+
+function handleFoulGround(angle) {
+  const H = home();
+  const dist = 20 + Math.random() * 20;
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  showBallFlight(lx, ly, 0.5, 'ground');
+  if (G.pitchNum > 3) {
+    queueResult('FOUL — OUT', 'Foul on 3rd pitch', true);
+  } else {
+    queueResult('FOUL', `Pitch ${G.pitchNum} of 3`, false);
+  }
+}
+
+function handleHR(angle) {
+  // Ball clears the wall
+  const dist = 205 + Math.random() * 30;
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  showBallFlight(lx, ly, 2.0, 'fly');
+  const runs = advanceRunners(4);
+  G.score[G.half] += runs;
+  const runnersOnBase = runs - 1; // before batter scored
+  queueResult('HOME RUN!', `${runs} run${runs !== 1 ? 's' : ''} score!`, true, true);
+}
+
+function handleTriple(angle) {
+  const dist = 175 + Math.random() * 20;
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  const flightTime = 1.4;
+  showBallFlight(lx, ly, flightTime, 'fly');
+  sendDefenders(lx, ly);
+  // Triple = hits the wall in the air — no chance to field
+  const runs = advanceRunners(3);
+  G.score[G.half] += runs;
+  queueResult('TRIPLE!', runs > 0 ? `${runs} run${runs !== 1 ? 's' : ''} score!` : '', true, true);
+}
+
+function handleDouble(angle) {
+  const dist = 155 + Math.random() * 25;
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  const flightTime = 1.2;
+  showBallFlight(lx, ly, flightTime, 'fly');
+  sendDefenders(lx, ly);
+  // Defender may catch it or field the roll
+  if (defenderCatches(lx, ly, flightTime)) {
+    G.outs++;
+    checkDoublePlayCan();
+    const dpText = G.canKnocked ? '\nDOUBLE PLAY!' : '';
+    queueResult('CAUGHT — OUT' + dpText, '', true, true);
+  } else {
+    const runs = advanceRunners(2);
+    G.score[G.half] += runs;
+    queueResult('DOUBLE!', runs > 0 ? `${runs} run${runs !== 1 ? 's' : ''} score!` : '', true, true);
+  }
+}
+
+function handleFlyBall(type, angle) {
+  const dist = 85 + Math.random() * 60;
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  const flightTime = 1.0;
+  showBallFlight(lx, ly, flightTime, 'fly');
+  sendDefenders(lx, ly);
+  if (defenderCatches(lx, ly, flightTime)) {
+    G.outs++;
+    // Double play attempt if runners on base
+    if (G.runners.some(r => r)) {
+      checkDoublePlayCan();
+      const dpText = G.canKnocked ? '\nDOUBLE PLAY!' : '';
+      queueResult('CAUGHT — OUT' + dpText, '', true, true);
+    } else {
+      queueResult('CAUGHT — OUT', '', true, true);
+    }
+  } else {
+    const runs = advanceRunners(1);
+    G.score[G.half] += runs;
+    queueResult('SINGLE!', runs > 0 ? `${runs} run${runs !== 1 ? 's' : ''} score!` : '', true, true);
+  }
+}
+
+function handleGroundBall(angle) {
+  // Ground ball bounces through pool, rolls into outfield
+  const dist = 80 + Math.random() * 60; // might reach wall
+  const lx = landingPos(angle, dist).x;
+  const ly = landingPos(angle, dist).y;
+  const rollTime = 1.6;
+  showBallFlight(lx, ly, rollTime, 'ground');
+  sendDefenders(lx, ly);
+  if (defenderFieldsGrounder(lx, ly, rollTime)) {
+    G.outs++;
+    queueResult('FIELDED — OUT', 'Ground out', true, true);
+  } else {
+    const runs = advanceRunners(1);
+    G.score[G.half] += runs;
+    queueResult('SINGLE!', `Ground ball${runs > 0 ? ` — ${runs} run${runs !== 1 ? 's' : ''} score!` : ''}`, true, true);
+  }
+}
+
+function checkDoublePlayCan() {
+  // 30% base chance a defender throws to the can and knocks it over
+  if (G.runners.some(r => r) && Math.random() < 0.30) {
+    G.canKnocked = true;
+    G.outs++;
+  }
+}
+
+// ================================================================
+// BALL ANIMATION
+// ================================================================
+function showBallFlight(tx, ty, dur, type) {
+  const H = home();
+  G.ball = {
+    startX: H.x,
+    startY: H.y - 10,
+    x: H.x,
+    y: H.y - 10,
+    tx, ty,
+    t: 0,
+    dur, // seconds
+    type,
+    done: false,
+  };
+}
+
+function showBallMiss() {
+  const H = home();
+  G.ball = {
+    startX: pitcherPos().x,
+    startY: pitcherPos().y,
+    x: pitcherPos().x,
+    y: pitcherPos().y,
+    tx: H.x,
+    ty: H.y - 8,
+    t: 0,
+    dur: 0.5,
+    type: 'miss',
+    done: false,
+  };
+}
+
+// ================================================================
+// RESULT / PHASE MANAGEMENT
+// ================================================================
+function queueResult(main, sub, endAtBat, endPitchSeq = false) {
+  G.pendingResult = { main, sub, endAtBat, endPitchSeq };
+}
+
+function showResult(main, sub) {
+  const el = document.getElementById('flash');
+  el.innerHTML = main + (sub ? `<div class="sub">${sub}</div>` : '');
+  el.style.display = 'block';
+}
+
+function hideResult() {
+  document.getElementById('flash').style.display = 'none';
+}
+
+function showPrompt(text) {
+  const el = document.getElementById('prompt');
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function hidePrompt() {
+  document.getElementById('prompt').style.display = 'none';
+}
+
+// ================================================================
+// HUD UPDATE
+// ================================================================
+function updateHUD() {
+  if (!G) return;
+  const batting = G.half === 1 ? G.homeTeam : G.awayTeam;
+  document.getElementById('h-inning').textContent = G.inning;
+  document.getElementById('h-half').textContent = G.half === 0 ? '▲ TOP' : '▼ BOT';
+  document.getElementById('h-outs').textContent = G.outs;
+  document.getElementById('h-pitch').textContent = `${Math.min(G.pitchNum, 3)} / 3`;
+  document.getElementById('h-away-score').textContent = G.score[1];
+  document.getElementById('h-home-score').textContent = G.score[0];
+  document.getElementById('h-away-name').textContent = G.awayTeam;
+  document.getElementById('h-home-name').textContent = G.homeTeam;
+  document.getElementById('h-batting').textContent = batting;
+  // bases
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`b${i}`).className = 'base-diamond' + (G.runners[i-1] ? ' on' : '');
+  }
+}
+
+// ================================================================
+// GAME FLOW
+// ================================================================
+function startGame() {
+  const homeTeam = document.getElementById('home-name').value || 'Home';
+  const awayTeam = document.getElementById('away-name').value || 'Away';
+  const playerCount = parseInt(document.getElementById('player-count').value);
+  const defCount = parseInt(document.getElementById('def-count').value);
+
+  G = newGame(homeTeam, awayTeam, playerCount, defCount);
+  G.defenders = initDefenders(defCount);
+
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  updateHUD();
+
+  startNewAtBat();
+  requestAnimationFrame(loop);
+}
+
+function startNewAtBat() {
+  G.pitchNum = 1;
+  G.swung = false;
+  G.ball = null;
+  G.canKnocked = false;
+  G.pendingResult = null;
+  G.defenders = initDefenders(G.defCount);
+
+  const isPlayerBatting = (G.half === G.playerHalf);
+
+  if (isPlayerBatting) {
+    G.phase = PHASE.READY;
+    updateHUD();
+    setTimeout(() => beginPitch(), 800);
+  } else {
+    // CPU bats — simulate after a brief pause
+    G.phase = PHASE.AUTO_BAT;
+    updateHUD();
+    setTimeout(() => autoBat(), 1200);
+  }
+}
+
+function beginPitch() {
+  if (G.outs >= 3) return;
+  G.swung = false;
+  G.ball = null;
+  G.canKnocked = false;
+  G.phase = PHASE.PITCHING;
+  G.pitchStart = performance.now();
+  G.defenders = initDefenders(G.defCount);
+  updateHUD();
+  showPrompt('PRESS SPACE OR CLICK TO SWING');
+}
+
+function onSpacePress(now) {
+  if (G && G.phase === PHASE.PITCHING && !G.swung) {
+    G.swung = true;
+    hidePrompt();
+    const swingMs = now - G.pitchStart;
+    resolveSwing(swingMs);
+    G.phase = PHASE.BALL_FLIGHT;
+  }
+}
+
+// CPU auto-bat simulation
+function autoBat() {
+  if (G.outs >= 3) { checkHalfInningEnd(); return; }
+  // Simulate 1-3 pitches
+  const numPitches = 1 + Math.floor(Math.random() * 3);
+  simulatePitches(numPitches, 0);
+}
+
+function simulatePitches(total, current) {
+  if (G.outs >= 3) { checkHalfInningEnd(); return; }
+  if (current >= total) {
+    // At-bat over via all pitches used (miss all = out) or earlier result
+    setTimeout(() => startNewAtBat(), 800);
+    return;
+  }
+  const r = Math.random();
+  let result;
+  if (r < 0.08)       result = 'hr';
+  else if (r < 0.14)  result = 'triple';
+  else if (r < 0.26)  result = 'double';
+  else if (r < 0.48)  result = 'single';
+  else if (r < 0.62)  result = 'grounder';
+  else if (r < 0.70)  result = 'caught';
+  else if (r < 0.82)  result = 'foul';
+  else                result = 'miss';
+
+  let msg = '', sub = '', endAB = false;
+  G.pitchNum = current + 1;
+
+  switch (result) {
+    case 'hr': {
+      const runs = advanceRunners(4);
+      G.score[1 - G.playerHalf] += runs;
+      msg = 'HOME RUN!'; sub = `${runs} run${runs!==1?'s':''} score!`; endAB = true; break;
+    }
+    case 'triple': {
+      const runs = advanceRunners(3);
+      G.score[1 - G.playerHalf] += runs;
+      msg = 'TRIPLE!'; sub = runs > 0 ? `${runs} run${runs!==1?'s':''} score!` : ''; endAB = true; break;
+    }
+    case 'double': {
+      const caught = Math.random() < 0.35;
+      if (caught) {
+        G.outs++;
+        msg = 'CAUGHT — OUT'; endAB = true;
+        checkDoublePlayCan();
+        if (G.canKnocked) { msg += '\nDOUBLE PLAY!'; }
+      } else {
+        const runs = advanceRunners(2);
+        G.score[1 - G.playerHalf] += runs;
+        msg = 'DOUBLE!'; sub = runs > 0 ? `${runs} run${runs!==1?'s':''} score!` : ''; endAB = true;
+      }
+      break;
+    }
+    case 'single': {
+      const caught = Math.random() < 0.40;
+      if (caught) {
+        G.outs++;
+        msg = 'CAUGHT — OUT'; endAB = true;
+        if (G.runners.some(r=>r) && Math.random()<0.25) { G.canKnocked=true; G.outs++; msg+='\nDOUBLE PLAY!'; }
+      } else {
+        const runs = advanceRunners(1);
+        G.score[1 - G.playerHalf] += runs;
+        msg = 'SINGLE!'; sub = runs > 0 ? `${runs} run${runs!==1?'s':''} score!` : ''; endAB = true;
+      }
+      break;
+    }
+    case 'grounder': {
+      const fielded = Math.random() < 0.50;
+      if (fielded) { G.outs++; msg = 'FIELDED — OUT'; endAB = true; }
+      else {
+        const runs = advanceRunners(1);
+        G.score[1 - G.playerHalf] += runs;
+        msg = 'SINGLE! (ground)'; endAB = true;
+      }
+      break;
+    }
+    case 'caught': {
+      G.outs++;
+      msg = 'CAUGHT — OUT'; endAB = true;
+      if (G.runners.some(r=>r) && Math.random()<0.25) { G.canKnocked=true; G.outs++; msg+='\nDOUBLE PLAY!'; }
+      break;
+    }
+    case 'foul': {
+      if (current + 1 >= 3) { G.outs++; msg = 'FOUL — OUT'; endAB = true; }
+      else { msg = 'FOUL'; sub = `Pitch ${current+2} of 3`; }
+      break;
+    }
+    case 'miss': {
+      if (current + 1 >= 3) { G.outs++; msg = 'STRIKE THREE — OUT'; endAB = true; }
+      else { msg = 'MISS'; sub = `Pitch ${current+2} of 3`; }
+      break;
+    }
+  }
+
+  showResult(msg, sub);
+  updateHUD();
+
+  setTimeout(() => {
+    hideResult();
+    if (G.outs >= 3) {
+      checkHalfInningEnd();
+    } else if (endAB) {
+      setTimeout(() => startNewAtBat(), 400);
+    } else {
+      simulatePitches(total, current + 1);
+    }
+  }, 1600);
+}
+
+function checkHalfInningEnd() {
+  if (G.outs < 3) return;
+  G.phase = PHASE.INNING_BREAK;
+  G.outs = 0;
+  G.runners = [false, false, false];
+  hidePrompt();
+
+  if (G.half === 0) {
+    // End of top of inning — switch to bottom
+    G.half = 1;
+    showResult(`END OF TOP ${G.inning}`, `${G.awayTeam} ${G.score[1]} — ${G.homeTeam} ${G.score[0]}`);
+    setTimeout(() => { hideResult(); updateHUD(); setTimeout(() => startNewAtBat(), 600); }, 2200);
+  } else {
+    // End of bottom — check if game over
+    if (G.inning >= 9) {
+      showGameOver();
+      return;
+    }
+    G.inning++;
+    G.half = 0;
+    showResult(`END OF INNING ${G.inning - 1}`, `${G.awayTeam} ${G.score[1]} — ${G.homeTeam} ${G.score[0]}`);
+    setTimeout(() => { hideResult(); updateHUD(); setTimeout(() => startNewAtBat(), 600); }, 2200);
+  }
+}
+
+function showGameOver() {
+  G.phase = PHASE.GAME_OVER;
+  const el = document.getElementById('gameover');
+  document.getElementById('go-final').textContent =
+    `${G.awayTeam} ${G.score[1]}   —   ${G.homeTeam} ${G.score[0]}`;
+  let winner;
+  if (G.score[0] > G.score[1])       winner = `${G.homeTeam} WIN!`;
+  else if (G.score[1] > G.score[0])  winner = `${G.awayTeam} WIN!`;
+  else                                winner = "TIE GAME";
+  document.getElementById('go-winner').textContent = winner;
+  el.style.display = 'flex';
+}
+
+// ================================================================
+// RESULT PROCESSING AFTER BALL ANIMATION
+// ================================================================
+function processPendingResult() {
+  if (!G.pendingResult) return;
+  const { main, sub, endAtBat, endPitchSeq } = G.pendingResult;
+  G.pendingResult = null;
+  G.phase = PHASE.RESULT;
+  showResult(main, sub);
+  updateHUD();
+
+  setTimeout(() => {
+    hideResult();
+    if (G.outs >= 3) {
+      checkHalfInningEnd();
+    } else if (endAtBat) {
+      setTimeout(() => startNewAtBat(), 500);
+    } else {
+      // Foul or miss — continue at-bat if pitches remain
+      if (G.pitchNum > 3) {
+        G.outs++;
+        showResult('OUT', '3 pitches used');
+        setTimeout(() => { hideResult(); checkHalfInningEnd(); }, 1500);
+      } else {
+        setTimeout(() => beginPitch(), 800);
+      }
+    }
+  }, 2000);
+}
+
+// ================================================================
+// RENDERING
+// ================================================================
+function render() {
+  const W = canvas.width, H2 = canvas.height;
+  ctx.clearRect(0, 0, W, H2);
+
+  // Background — concrete/blacktop
+  ctx.fillStyle = '#2a2a2a';
+  ctx.fillRect(0, 0, W, H2);
+
+  // Draw field
+  drawField();
+
+  // Draw ball animation
+  if (G && G.ball) drawBall();
+
+  // Draw defenders
+  if (G) drawDefenders();
+
+  // Draw pitch ball if pitching
+  if (G && G.phase === PHASE.PITCHING) drawPitchBall();
+}
+
+function drawField() {
+  const F = fieldVerts();
+  const P = poolVerts();
+  const H = home();
+
+  // Outfield surface (blacktop/concrete slightly lighter)
+  ctx.beginPath();
+  ctx.moveTo(F.home.x, F.home.y);
+  ctx.lineTo(F.left.x, F.left.y);
+  ctx.lineTo(F.top.x, F.top.y);
+  ctx.lineTo(F.right.x, F.right.y);
+  ctx.closePath();
+  ctx.fillStyle = '#303030';
+  ctx.fill();
+
+  // Pool surface (slightly different shade — the "infield")
+  ctx.beginPath();
+  ctx.moveTo(P.home.x, P.home.y);
+  ctx.lineTo(P.left.x, P.left.y);
+  ctx.lineTo(P.top.x, P.top.y);
+  ctx.lineTo(P.right.x, P.right.y);
+  ctx.closePath();
+  ctx.fillStyle = '#282828';
+  ctx.fill();
+
+  // Faint grid lines on concrete (texture hint)
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  for (let i = -300; i < 600; i += 30) {
+    ctx.beginPath();
+    ctx.moveTo(H.x + i, 0);
+    ctx.lineTo(H.x + i, H2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, H.y - i);
+    ctx.lineTo(W, H.y - i);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Outer wall
+  ctx.beginPath();
+  ctx.moveTo(F.home.x, F.home.y);
+  ctx.lineTo(F.left.x, F.left.y);
+  ctx.lineTo(F.top.x, F.top.y);
+  ctx.lineTo(F.right.x, F.right.y);
+  ctx.closePath();
+  ctx.strokeStyle = '#cc4400';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Left field wall indicator (thick)
+  ctx.beginPath();
+  ctx.moveTo(F.home.x, F.home.y);
+  ctx.lineTo(F.left.x, F.left.y);
+  ctx.strokeStyle = '#ff6622';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Wall height label
+  ctx.save();
+  ctx.translate((F.home.x + F.left.x)/2 - 18, (F.home.y + F.left.y)/2 + 14);
+  ctx.rotate(-Math.PI/4);
+  ctx.fillStyle = '#ff6622';
+  ctx.font = '11px Courier New';
+  ctx.fillText('12ft WALL', 0, 0);
+  ctx.restore();
+
+  // Pool boundary line
+  ctx.beginPath();
+  ctx.moveTo(P.home.x, P.home.y);
+  ctx.lineTo(P.left.x, P.left.y);
+  ctx.lineTo(P.top.x, P.top.y);
+  ctx.lineTo(P.right.x, P.right.y);
+  ctx.closePath();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([6, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // "THE POOL" label
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = 'bold 13px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('THE POOL', H.x, H.y - 70 * S * I2 * 0.5);
+
+  // Pitcher's stripe
+  const pitchY = H.y - 40 * S;
+  const pBounds = poolBoundsX(pitchY);
+  if (pBounds) {
+    ctx.beginPath();
+    ctx.moveTo(pBounds.left, pitchY);
+    ctx.lineTo(pBounds.right, pitchY);
+    ctx.strokeStyle = '#44ff88';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#44ff88';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'left';
+    ctx.fillText("PITCHER'S STRIPE", pBounds.right + 6, pitchY + 4);
+  }
+
+  // Double play can
+  const cp = canPos();
+  ctx.beginPath();
+  ctx.arc(cp.x, cp.y, 6, 0, Math.PI * 2);
+  ctx.fillStyle = G && G.canKnocked ? '#888' : '#cc44ff';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = '#cc44ff';
+  ctx.font = '9px Courier New';
+  ctx.textAlign = 'left';
+  ctx.fillText('CAN', cp.x + 9, cp.y + 4);
+
+  // Home plate
+  ctx.beginPath();
+  const ps = 7;
+  ctx.moveTo(H.x, H.y - ps);
+  ctx.lineTo(H.x + ps, H.y);
+  ctx.lineTo(H.x, H.y + ps);
+  ctx.lineTo(H.x - ps, H.y);
+  ctx.closePath();
+  ctx.fillStyle = '#cc3333';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Distance labels
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = '11px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('200 ft', F.left.x + 15, (F.home.y + F.left.y) / 2 + 8);
+  ctx.fillText('70 ft', (H.x + P.right.x) / 2 + 20, (H.y + P.right.y) / 2);
+
+  // Location label
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.font = 'bold 14px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('SEPULVEDA DAM SPILLWAY', H.x, 28);
+  ctx.font = '11px Courier New';
+  ctx.fillText('LOS ANGELES, CA', H.x, 44);
+
+  ctx.textAlign = 'left'; // reset
+}
+
+// Pool x-bounds at given screen-y
+function poolBoundsX(y) {
+  const P = poolVerts();
+  const H = home();
+  if (y <= P.top.y || y >= H.y) return null;
+  if (y >= P.left.y) {
+    const t = (H.y - y) / (H.y - P.left.y);
+    return { left: H.x + t * (P.left.x - H.x), right: H.x + t * (P.right.x - H.x) };
+  } else {
+    const t = (P.left.y - y) / (P.left.y - P.top.y);
+    return { left: P.left.x + t * (P.top.x - P.left.x), right: P.right.x + t * (P.top.x - P.right.x) };
+  }
+}
+
+function drawDefenders() {
+  for (const d of G.defenders) {
+    // Only draw if in outfield zone
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#4488ff';
+    ctx.fill();
+    ctx.strokeStyle = '#88aaff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Direction indicator
+    const dx = d.tx - d.x, dy = d.ty - d.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > 15) {
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x + (dx/dist)*12, d.y + (dy/dist)*12);
+      ctx.strokeStyle = 'rgba(68,136,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+}
+
+function drawBall() {
+  const b = G.ball;
+  if (!b) return;
+  // Arc for fly ball: parabolic height
+  let dispX = b.x, dispY = b.y;
+  if (b.type === 'fly') {
+    // Shadow on ground
+    const prog = b.t / b.dur;
+    const shadowX = b.startX + prog * (b.tx - b.startX);
+    const shadowY = b.startY + prog * (b.ty - b.startY);
+    ctx.beginPath();
+    ctx.ellipse(shadowX, shadowY, 5 * (1 - Math.abs(prog - 0.5) * 1.2), 3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+    // Arc height
+    const arcH = Math.sin(prog * Math.PI) * 60;
+    dispY = b.y - arcH;
+  }
+  ctx.beginPath();
+  ctx.arc(dispX, dispY, b.type === 'miss' ? 5 : 6, 0, Math.PI * 2);
+  ctx.fillStyle = b.type === 'fly' ? '#ccee44' : b.type === 'miss' ? '#888' : '#ddbb22';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawPitchBall() {
+  const now = performance.now();
+  const elapsed = now - G.pitchStart;
+  const prog = Math.min(elapsed / G.pitchDur, 1);
+  const PP = pitcherPos(), H = home();
+  const bx = PP.x + prog * (H.x - PP.x);
+  const by = PP.y + prog * (H.y - PP.y - 10);
+  // Slight arc
+  const arc = Math.sin(prog * Math.PI) * 12;
+  ctx.beginPath();
+  ctx.arc(bx, by - arc, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#ccee44';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Timing indicator
+  const plateProg = prog;
+  const zoneAlpha = Math.max(0, Math.min(1, 1 - Math.abs(plateProg - 1) * 6));
+  if (zoneAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = zoneAlpha * 0.7;
+    ctx.beginPath();
+    ctx.arc(H.x, H.y - 5, 18, 0, Math.PI * 2);
+    ctx.strokeStyle = '#f0c040';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ================================================================
+// GAME LOOP
+// ================================================================
+let lastFrame = 0;
+function loop(ts) {
+  const dt = Math.min((ts - lastFrame) / 1000, 0.05);
+  lastFrame = ts;
+
+  if (G) {
+    // Update defenders
+    updateDefenders(dt);
+
+    // Update ball animation
+    if (G.ball && !G.ball.done) {
+      G.ball.t += dt;
+      const prog = Math.min(G.ball.t / G.ball.dur, 1);
+      G.ball.x = G.ball.startX + prog * (G.ball.tx - G.ball.startX);
+      G.ball.y = G.ball.startY + prog * (G.ball.ty - G.ball.startY);
+      if (prog >= 1) {
+        G.ball.done = true;
+        if (G.phase === PHASE.BALL_FLIGHT) {
+          processPendingResult();
+        }
+      }
+    }
+
+    // Auto-resolve if player missed the window (ball reached plate with no swing)
+    if (G.phase === PHASE.PITCHING) {
+      const elapsed = performance.now() - G.pitchStart;
+      if (elapsed > G.pitchDur + 600 && !G.swung) {
+        // Took too long — count as miss
+        G.swung = true;
+        hidePrompt();
+        G.pitchNum++;
+        if (G.pitchNum > 3) {
+          G.outs++;
+          showResult('MISS — OUT', '3 pitches used');
+          setTimeout(() => { hideResult(); checkHalfInningEnd(); }, 1800);
+        } else {
+          showResult('MISS', `Pitch ${G.pitchNum} of 3`);
+          setTimeout(() => { hideResult(); beginPitch(); }, 1800);
+        }
+        G.phase = PHASE.RESULT;
+      }
+    }
+  }
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+// Kick off initial render loop
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
