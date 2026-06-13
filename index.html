@@ -5,861 +5,1150 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YFS Stickball — Sepulveda Dam Spillway</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #111; color: #fff; font-family: Arial, sans-serif; overflow: hidden; }
-#canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; font-family: Arial, sans-serif; overflow: hidden; }
+  #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+  canvas { display: block; }
 
-#setup-screen {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-  display: flex; align-items: center; justify-content: center; z-index: 100;
-}
-.setup-box {
-  background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.2);
-  border-radius: 16px; padding: 40px; max-width: 520px; width: 92%; text-align: center;
-}
-.setup-box h1 { font-size: 2.2rem; color: #f0c040; margin-bottom: 4px; text-shadow: 0 0 20px #f0c04088; }
-.setup-box .sub { font-size: 0.82rem; color: #aaa; margin-bottom: 26px; letter-spacing: 1px; }
-.form-row { display: flex; gap: 14px; margin-bottom: 14px; }
-.form-group { flex: 1; text-align: left; }
-.form-group label { display: block; font-size: 0.7rem; color: #aaa; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
-.form-group input, .form-group select {
-  width: 100%; padding: 8px 10px; background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: #fff; font-size: 0.9rem;
-}
-.form-group input:focus, .form-group select:focus { outline: none; border-color: #f0c040; }
-.rules-note { font-size: 0.7rem; color: #777; text-align: left; margin-top: 14px; line-height: 1.7; }
-.play-btn {
-  margin-top: 20px; padding: 13px 44px; background: #f0c040; color: #1a1a2e;
-  border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer;
-}
-.play-btn:hover { filter: brightness(1.1); }
+  /* Setup */
+  #setup-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg,#1a1a2e,#16213e 50%,#0f3460);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  #setup-box {
+    background: rgba(255,255,255,.07); border: 2px solid rgba(255,200,0,.5);
+    border-radius: 16px; padding: 36px; max-width: 520px; width: 90%;
+    color: #fff; box-shadow: 0 0 40px rgba(255,200,0,.2);
+  }
+  #setup-box h1 { font-size: 2em; color: #ffd700; text-align: center; margin-bottom: 4px; text-shadow: 0 0 20px #ffd700; }
+  .subtitle { text-align: center; color: #aaa; font-size: .9em; margin-bottom: 24px; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; margin-bottom: 5px; color: #ccc; font-size: .88em; }
+  .form-row input, .form-row select {
+    width: 100%; padding: 9px 13px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    border-radius: 8px; color: #fff; font-size: 1em;
+  }
+  .form-row input::placeholder { color: #888; }
+  .form-row input:focus,.form-row select:focus { outline: none; border-color: #ffd700; }
+  .form-row select option { background: #1a1a2e; }
+  .team-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  #play-btn {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg,#ffd700,#ff8c00);
+    border: none; border-radius: 10px;
+    font-size: 1.25em; font-weight: bold; color: #000; cursor: pointer;
+    margin-top: 8px; text-transform: uppercase; letter-spacing: 2px;
+    transition: transform .1s, box-shadow .1s;
+  }
+  #play-btn:hover { transform: scale(1.02); box-shadow: 0 0 18px rgba(255,200,0,.5); }
+  #play-btn:active { transform: scale(.97); }
+  .rules-box {
+    margin-top: 18px; padding: 13px;
+    background: rgba(255,255,255,.04); border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.1);
+    font-size: .77em; color: #aaa; line-height: 1.7;
+  }
+  .rules-box strong { color: #ffd700; }
 
-#hud { position: fixed; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 10; display: none; }
+  /* HUD */
+  #hud {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10; display: none;
+  }
+  #scoreboard {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.78); border: 1px solid rgba(255,200,0,.4);
+    border-radius: 10px; padding: 8px 22px;
+    display: flex; gap: 22px; align-items: center; color: #fff; font-size: .9em;
+  }
+  .score-item { text-align: center; }
+  .score-label { font-size: .68em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+  .score-value { font-size: 1.4em; font-weight: bold; color: #ffd700; }
+  #location-tag {
+    position: absolute; top: 12px; right: 16px;
+    background: rgba(0,0,0,.6); border-radius: 6px;
+    padding: 6px 12px; font-size: .75em; color: #aaa;
+  }
+  #bases-display {
+    position: absolute; top: 12px; left: 16px;
+    background: rgba(0,0,0,.7); border-radius: 8px; padding: 10px 14px;
+  }
+  .bases-diamond { position: relative; width: 62px; height: 62px; }
+  .base-dot {
+    position: absolute; width: 14px; height: 14px;
+    background: #333; border: 2px solid #666; border-radius: 2px;
+    transform: rotate(45deg); transition: background .2s, box-shadow .2s;
+  }
+  .base-dot.occupied { background: #ffd700; border-color: #ffd700; box-shadow: 0 0 8px #ffd700; }
+  #base-2nd  { top: 2px;  left: 24px; }
+  #base-3rd  { top: 24px; left: 2px; }
+  #base-1st  { top: 24px; left: 46px; }
+  #base-home { top: 46px; left: 24px; background: #555; border-color: #777; }
+  #batter-info {
+    position: absolute; bottom: 118px; left: 50%; transform: translateX(-50%);
+    text-align: center; color: #fff;
+    background: rgba(0,0,0,.55); padding: 6px 18px; border-radius: 8px; font-size: .85em;
+  }
+  .pitch-pips { display: flex; gap: 7px; justify-content: center; margin-top: 5px; }
+  .pitch-pip {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid #aaa; background: transparent; transition: all .2s;
+  }
+  .pitch-pip.used { background: #e74c3c; border-color: #e74c3c; }
 
-#scoreboard {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.78); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 10px; padding: 8px 18px; display: flex; gap: 18px; align-items: center;
-}
-.sc-item { text-align: center; }
-.sc-label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-.sc-val { font-size: 1.1rem; font-weight: bold; color: #f0c040; }
+  /* Timing bar */
+  #timing-container {
+    position: absolute; bottom: 58px; left: 50%; transform: translateX(-50%);
+    width: 330px; pointer-events: auto; display: none;
+  }
+  #timing-label { text-align: center; color: #ddd; font-size: .82em; margin-bottom: 6px; }
+  #timing-track {
+    position: relative; height: 30px;
+    background: #1a1a1a; border-radius: 15px; border: 2px solid #555; overflow: hidden;
+  }
+  #timing-good { position: absolute; top: 4px; height: 22px; background: #27ae60; border-radius: 4px; opacity: .85; }
+  #timing-perfect { position: absolute; top: 4px; height: 22px; background: #f1c40f; border-radius: 4px; }
+  #timing-cursor {
+    position: absolute; top: 0; width: 5px; height: 100%;
+    background: #fff; border-radius: 3px; box-shadow: 0 0 10px #fff;
+  }
+  #swing-btn {
+    margin-top: 9px; width: 100%; padding: 10px;
+    background: rgba(255,200,0,.15); border: 2px solid #ffd700;
+    border-radius: 8px; color: #ffd700; font-size: 1em; font-weight: bold;
+    cursor: pointer; letter-spacing: 1px; pointer-events: auto; transition: background .15s;
+  }
+  #swing-btn:hover { background: rgba(255,200,0,.3); }
 
-#location-tag {
-  position: absolute; top: 12px; right: 14px;
-  background: rgba(0,0,0,0.6); border-radius: 6px; padding: 4px 9px;
-  font-size: 0.65rem; color: #aaa;
-}
+  /* Flash */
+  #flash-msg {
+    position: absolute; top: 32%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 3.2em; font-weight: 900; text-align: center;
+    pointer-events: none; opacity: 0; transition: opacity .3s;
+    white-space: nowrap; text-shadow: 2px 2px 0 rgba(0,0,0,.8),0 0 30px currentColor;
+  }
+  #flash-msg.hr     { color: #ffd700; }
+  #flash-msg.triple { color: #ff8c00; }
+  #flash-msg.double { color: #2ecc71; }
+  #flash-msg.single { color: #3498db; }
+  #flash-msg.out    { color: #e74c3c; }
+  #flash-msg.foul   { color: #aaa; }
+  #flash-msg.strike { color: #e67e22; }
 
-#bases-box {
-  position: absolute; top: 12px; left: 14px;
-  background: rgba(0,0,0,0.6); border-radius: 8px; padding: 8px 10px;
-}
-.bl { font-size: 0.58rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
-.bd { width: 60px; height: 60px; position: relative; }
-.base-sq {
-  position: absolute; width: 13px; height: 13px;
-  border: 2px solid rgba(255,255,255,0.4); border-radius: 2px;
-  background: transparent; transform: rotate(45deg); transition: background 0.2s;
-}
-.base-sq.on { background: #f0c040; border-color: #f0c040; }
-
-#timing-wrap {
-  position: absolute; bottom: 78px; left: 50%; transform: translateX(-50%);
-  display: none; text-align: center;
-}
-#timing-label { font-size: 0.72rem; color: #ccc; margin-bottom: 5px; letter-spacing: 2px; }
-#timing-outer {
-  width: 300px; height: 20px; background: rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.25); border-radius: 10px;
-  overflow: hidden; position: relative;
-}
-#timing-zone {
-  position: absolute; top: 0; height: 100%;
-  background: rgba(255,255,0,0.22); border-left: 2px solid yellow; border-right: 2px solid yellow;
-  z-index: 0;
-}
-#timing-bar { height: 100%; width: 0%; border-radius: 10px; position: relative; z-index: 1; background: #4caf50; }
-
-#flash-msg {
-  position: absolute; top: 37%; left: 50%; transform: translate(-50%,-50%);
-  font-size: 2.6rem; font-weight: bold; color: #f0c040;
-  text-shadow: 0 0 28px #f0c040, 2px 2px 0 #000;
-  opacity: 0; pointer-events: none; text-align: center; white-space: nowrap;
-  transition: opacity 0.3s;
-}
-
-#pitch-count { position: absolute; bottom: 112px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #bbb; }
-#batter-name { position: absolute; bottom: 132px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #ddd; }
-#instructions { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #888; }
-
-#gameover {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.88);
-  display: none; align-items: center; justify-content: center; flex-direction: column;
-  gap: 12px; z-index: 50; text-align: center;
-}
-#gameover h2 { font-size: 2.8rem; color: #f0c040; }
-#gameover .fs { font-size: 1.4rem; color: #fff; line-height: 2; }
-#gameover button {
-  padding: 11px 34px; background: #f0c040; color: #111;
-  border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer;
-}
+  /* Overlay */
+  #overlay-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,.82); display: none;
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  #overlay-box {
+    background: rgba(5,5,30,.95); border: 2px solid #ffd700;
+    border-radius: 16px; padding: 42px; text-align: center;
+    color: #fff; max-width: 400px; width: 90%;
+  }
+  #overlay-box h2 { font-size: 2em; color: #ffd700; margin-bottom: 16px; }
+  #overlay-box p { margin-bottom: 12px; font-size: 1.05em; color: #ccc; line-height: 1.7; }
+  #overlay-btn {
+    padding: 12px 32px; background: #ffd700;
+    border: none; border-radius: 8px;
+    font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px;
+  }
+  #overlay-btn:hover { background: #ffb800; }
+  #restart-btn {
+    padding: 9px 24px; background: transparent;
+    border: 1px solid #666; border-radius: 8px;
+    color: #aaa; font-size: .88em; cursor: pointer;
+    margin-top: 10px; display: block; width: 100%;
+  }
+  #restart-btn:hover { background: rgba(255,255,255,.08); }
 </style>
 </head>
 <body>
 
+<!-- SETUP SCREEN -->
 <div id="setup-screen">
-  <div class="setup-box">
-    <h1>YFS Stickball</h1>
-    <div class="sub">Sepulveda Dam Spillway &bull; Los Angeles, CA</div>
-    <div class="form-row">
-      <div class="form-group"><label>Home Team</label><input type="text" id="team1" value="Homies" maxlength="14"></div>
-      <div class="form-group"><label>Away Team</label><input type="text" id="team2" value="Visitors" maxlength="14"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Players per Team</label>
-        <select id="players"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option></select>
+  <div id="setup-box">
+    <h1>YFS STICKBALL</h1>
+    <div class="subtitle">Sepulveda Dam Spillway &middot; Los Angeles, CA</div>
+    <div class="team-row">
+      <div class="form-row">
+        <label>Home Team</label>
+        <input type="text" id="home-name" placeholder="Home Team" value="Spillway Kings">
       </div>
-      <div class="form-group"><label>Defenders in Field</label>
-        <select id="defenders"><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option></select>
+      <div class="form-row">
+        <label>Away Team</label>
+        <input type="text" id="away-name" placeholder="Away Team" value="Dam Breakers">
       </div>
     </div>
-    <div class="rules-note">
-      <b style="color:#f0c040">Rules:</b> 3 pitches per at-bat &bull; Pitcher from batting team &bull;
-      Defenders stay beyond pool line (70ft) &bull; Single/Double/Triple/HR based on landing spot &bull;
-      Fly out + can knock = double play &bull; 3 outs per half &bull; 9 innings &bull; Ghost runners
+    <div class="team-row">
+      <div class="form-row">
+        <label>Players per Team</label>
+        <select id="player-count">
+          <option value="3">3 players</option>
+          <option value="4">4 players</option>
+          <option value="5" selected>5 players</option>
+          <option value="6">6 players</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Defenders in Field</label>
+        <select id="defender-count">
+          <option value="3">3 defenders</option>
+          <option value="4" selected>4 defenders</option>
+          <option value="5">5 defenders</option>
+          <option value="6">6 defenders</option>
+        </select>
+      </div>
     </div>
-    <button class="play-btn" onclick="startGame()">Play Ball!</button>
+    <div class="form-row">
+      <label>Innings</label>
+      <select id="inning-count">
+        <option value="3">3 innings (quick)</option>
+        <option value="5">5 innings</option>
+        <option value="9" selected>9 innings (full game)</option>
+      </select>
+    </div>
+    <button id="play-btn" onclick="startGame()">&#9658; PLAY BALL!</button>
+    <div class="rules-box">
+      <strong>Rules:</strong>
+      Pitcher from batting team &bull; Defenders stay outside pool (70ft line) &bull; 3 pitches per at-bat &bull;
+      Miss = pitch used &bull; Foul on 3rd = out &bull;<br>
+      <strong>Single</strong> = fly to outfield &nbsp;
+      <strong>Double</strong> = reaches wall &nbsp;
+      <strong>Triple</strong> = hits wall on fly &nbsp;
+      <strong>HR</strong> = clears wall<br>
+      Press <strong>SPACE</strong> or click <strong>SWING!</strong> to bat
+    </div>
   </div>
 </div>
 
+<!-- 3D CANVAS -->
 <div id="canvas-container"></div>
 
+<!-- HUD -->
 <div id="hud">
-  <div id="location-tag">&#9733; Sepulveda Dam Spillway, LA</div>
-  <div id="bases-box">
-    <div class="bl">Bases</div>
-    <div class="bd">
-      <div class="base-sq" id="b2" style="top:1px;left:22px;"></div>
-      <div class="base-sq" id="b3" style="top:22px;left:1px;"></div>
-      <div class="base-sq" id="b1" style="top:22px;left:43px;"></div>
-      <div class="base-sq" style="top:43px;left:22px;border-color:rgba(255,255,255,0.15);"></div>
+  <div id="bases-display">
+    <div class="bases-diamond">
+      <div class="base-dot" id="base-2nd"></div>
+      <div class="base-dot" id="base-3rd"></div>
+      <div class="base-dot" id="base-1st"></div>
+      <div class="base-dot" id="base-home"></div>
     </div>
   </div>
   <div id="scoreboard">
-    <div class="sc-item"><div class="sc-label" id="lbl1">Home</div><div class="sc-val" id="s1">0</div></div>
-    <div class="sc-item"><div class="sc-label">Inning</div><div class="sc-val" id="inn">1</div></div>
-    <div class="sc-item"><div class="sc-label" id="lbl2">Away</div><div class="sc-val" id="s2">0</div></div>
-    <div class="sc-item"><div class="sc-label">Outs</div><div class="sc-val" id="outs">0</div></div>
-    <div class="sc-item"><div class="sc-label">Half</div><div class="sc-val" id="half">&#9650;</div></div>
-  </div>
-  <div id="batter-name"></div>
-  <div id="pitch-count"></div>
-  <div id="timing-wrap">
-    <div id="timing-label">PRESS SPACE TO SWING</div>
-    <div id="timing-outer">
-      <div id="timing-zone"></div>
-      <div id="timing-bar"></div>
+    <div class="score-item">
+      <div class="score-label" id="away-label">Away</div>
+      <div class="score-value" id="away-score">0</div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">Inning</div>
+      <div class="score-value" id="inning-display">1&#9650;</div>
+    </div>
+    <div class="score-item">
+      <div class="score-label" id="home-label">Home</div>
+      <div class="score-value" id="home-score">0</div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">Outs</div>
+      <div class="score-value" id="outs-display">0</div>
     </div>
   </div>
+  <div id="location-tag">&#128205; Sepulveda Dam Spillway, LA</div>
+  <div id="batter-info">
+    <span id="batter-name">Batter #1</span>
+    <div class="pitch-pips">
+      <div class="pitch-pip" id="pip-1"></div>
+      <div class="pitch-pip" id="pip-2"></div>
+      <div class="pitch-pip" id="pip-3"></div>
+    </div>
+  </div>
+  <div id="timing-container">
+    <div id="timing-label">SWING TIMING — Press SPACE or SWING!</div>
+    <div id="timing-track">
+      <div id="timing-good"></div>
+      <div id="timing-perfect"></div>
+      <div id="timing-cursor"></div>
+    </div>
+    <button id="swing-btn" onclick="playerSwing()">&#9898; SWING!</button>
+  </div>
   <div id="flash-msg"></div>
-  <div id="instructions">Press SPACE to start pitch</div>
 </div>
 
-<div id="gameover">
-  <h2>Game Over!</h2>
-  <div class="fs" id="final-score"></div>
-  <button onclick="location.reload()">Play Again</button>
+<!-- OVERLAY -->
+<div id="overlay-screen">
+  <div id="overlay-box">
+    <h2 id="overlay-title">End of Inning</h2>
+    <p id="overlay-body"></p>
+    <button id="overlay-btn" onclick="continueGame()">Continue &#9654;</button>
+    <button id="restart-btn" onclick="restartGame()">&#8617; New Game</button>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
 
-// ── CONSTANTS ────────────────────────────────────────────────
-const FT        = 0.5;              // 1 foot = 0.5 scene units
-const SIDE      = 200 * FT;        // foul-line length (field side) = 100 units
-const POOL      = 70  * FT;        // pool-line distance from home
-const PITCH_Z   = -(40 * FT);      // pitcher's stripe Z
-const CAN_Z     = -(55 * FT);      // double-play can Z
-const WALL_H    = 12  * FT;        // wall height
-const CF_Z      = -(SIDE * 2);     // center-field back wall Z
+// ── CONSTANTS (all distances in Three.js units = metres, 1ft = 0.3048m) ──
+var FT   = 0.3048;
+var FS   = 200 * FT;   // outer wall / foul line length
+var PL   = 70  * FT;   // pool line distance from home
+var PS   = 40  * FT;   // pitcher's stripe
+var CD   = 55  * FT;   // double-play can distance
+var WH   = 12  * FT;   // left-field wall height
+var WW   = 0.25 * FT;  // wall width
 
-// ── GAME STATE ────────────────────────────────────────────────
-const GS = {
-  phase: 'setup',       // setup|ready|pitching|ball_flight|result|inning_break|game_over
-  inning: 1,
-  topHalf: true,        // true = away bats
-  outs: 0,
-  pitchNum: 1,
-  scores: [0, 0],       // [home, away]
-  bases: [false,false,false],
-  teams: [{name:'Home',players:[]},{name:'Away',players:[]}],
-  batterIdx: 0,
-  defCount: 4,
-  tim: { active:false, pos:0, dir:1 },
-  hitResult: null,
-  canUp: true,
+// ── GAME STATE ──
+var G = {};
+
+function newState() {
+  return {
+    phase: 'setup',
+    inning: 1, maxInnings: 9,
+    half: 'top',           // top=away bats, bottom=home bats
+    outs: 0, pitches: 0,
+    runners: [false,false,false],   // 1B,2B,3B
+    score: {home:0, away:0},
+    names: {home:'Home', away:'Away'},
+    playerCount: 5, defenderCount: 4,
+    batterIdx: {home:0, away:0},
+  };
+}
+
+// ── THREE.JS GLOBALS ──
+var scene, camera, renderer, clock;
+var fieldGroup, charGroup;
+var ballMesh, canMesh, batterMesh, pitcherMesh;
+var defMeshes = [];
+
+var camCur = {pos: new THREE.Vector3(0, 8*FT, 22*FT), tgt: new THREE.Vector3(0,0,-10*FT)};
+var camDst = {pos: new THREE.Vector3(0, 8*FT, 22*FT), tgt: new THREE.Vector3(0,0,-10*FT)};
+
+var ball = {
+  active:false, phase:'idle',
+  t:0, duration:1, apex:0,
+  src: new THREE.Vector3(), dst: new THREE.Vector3(), pos: new THREE.Vector3(),
+  hitType:null
 };
 
-// ── THREE.JS GLOBALS ──────────────────────────────────────────
-let scene, camera, renderer, clock;
-let ballMesh, batGroup, pitchGroup, canMesh;
-let defenders = [], defTargets = [];
+var timing = {
+  active:false, cursor:0, dir:1, speed:0.9,
+  good0:0.22, good1:0.78, perf0:0.42, perf1:0.58
+};
 
-// ── ANIMATION STATE ───────────────────────────────────────────
-let pitchAnim = null;
-let ballAnim  = null;
-let swingT    = 0, swinging = false;
-let camGoal   = new THREE.Vector3(0, 10, 30);
-let camPos    = new THREE.Vector3(0, 10, 30);
-let flashTmr  = null;
-let idleT     = 0;
+var swingAnim = {on:false, t:0, dur:0.35};
+var pitchAnim = {on:false, t:0, dur:0.65};
+var walkTick  = 0;
 
-// ── THREE.JS INIT ─────────────────────────────────────────────
+// ── UTILS ──
+function eio(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+function clamp(v,a,b) { return Math.max(a, Math.min(b, v)); }
+
+// ── INIT THREE ──
 function initThree() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb);
-  scene.fog = new THREE.FogExp2(0xaaccdd, 0.0035);
+  scene.background = new THREE.Color(0x7ec8e3);
+  scene.fog = new THREE.Fog(0x7ec8e3, 80*FT, 220*FT);
 
-  camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 600);
-  camera.position.copy(camPos);
-  camera.lookAt(0, 2, -20);
+  camera = new THREE.PerspectiveCamera(58, window.innerWidth/window.innerHeight, 0.05, 600*FT);
+  camera.position.set(0, 8*FT, 22*FT);
+  camera.lookAt(0, 0, -10*FT);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-  clock = new THREE.Clock();
-
-  // Lights
   scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-  const sun = new THREE.DirectionalLight(0xfff4d6, 1.3);
-  sun.position.set(50, 120, 40);
+  var sun = new THREE.DirectionalLight(0xfffae8, 1.05);
+  sun.position.set(40*FT, 60*FT, 30*FT);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  const sc = sun.shadow.camera;
-  [sc.left, sc.right, sc.top, sc.bottom, sc.far] = [-180,180,240,-20,500];
+  sun.shadow.mapSize.width = sun.shadow.mapSize.height = 2048;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -150*FT;
+  sun.shadow.camera.right = sun.shadow.camera.top   =  150*FT;
+  sun.shadow.camera.far = 400*FT;
   scene.add(sun);
-  const fill = new THREE.DirectionalLight(0x99bbff, 0.28);
-  fill.position.set(-40, 30, -60);
+  var fill = new THREE.DirectionalLight(0xc0d8ff, 0.28);
+  fill.position.set(-30*FT, 15*FT, -20*FT);
   scene.add(fill);
 
-  window.addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  });
-  window.addEventListener('keydown', e => {
-    if (e.code === 'Space') { e.preventDefault(); onSpace(); }
-  });
+  clock = new THREE.Clock();
+  window.addEventListener('resize', onResize);
+  window.addEventListener('keydown', onKey);
 }
 
-// ── FIELD BUILDING ────────────────────────────────────────────
+// ── FIELD ──
 function buildField() {
-  makeGround();
-  makeFoulLines();
-  makeWalls();
-  makePoolLine();
-  makePitcherStripe();
-  makeHomePlate();
-  makeCan();
-  makeEnvironment();
-}
+  fieldGroup = new THREE.Group();
+  scene.add(fieldGroup);
 
-function makeGround() {
-  const g = new THREE.PlaneGeometry(600, 600, 50, 50);
-  const cnt = g.attributes.position.count;
-  const col = new Float32Array(cnt * 3);
-  for (let i = 0; i < cnt; i++) {
-    const v = 0.43 + Math.random() * 0.1;
-    col[i*3]=v; col[i*3+1]=v; col[i*3+2]=v*0.94;
+  // Concrete ground with vertex color variation
+  var gRes = 48;
+  var geo = new THREE.PlaneGeometry(350*FT, 350*FT, gRes, gRes);
+  var cols = [];
+  var vCount = (gRes+1)*(gRes+1);
+  for (var i=0; i<vCount; i++) {
+    var v = 0.48 + Math.random()*0.07;
+    cols.push(v*0.98, v*0.96, v*0.93);
   }
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
-  mesh.rotation.x = -Math.PI/2;
-  mesh.receiveShadow = true;
-  scene.add(mesh);
-}
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+  var gnd = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({vertexColors:true}));
+  gnd.rotation.x = -Math.PI/2;
+  gnd.receiveShadow = true;
+  fieldGroup.add(gnd);
 
-// Field is a square rotated 45°:
-// Home=(0,0,0), RF corner=(SIDE,0,-SIDE), CF=(0,0,-2*SIDE), LF corner=(-SIDE,0,-SIDE)
-function corners() {
-  return [
-    new THREE.Vector3(0,0,0),
-    new THREE.Vector3(SIDE,0,-SIDE),
-    new THREE.Vector3(0,0,CF_Z),
-    new THREE.Vector3(-SIDE,0,-SIDE),
-  ];
-}
+  // Line materials
+  var MWHITE  = new THREE.MeshBasicMaterial({color:0xffffff,  depthWrite:false});
+  var MYELLOW = new THREE.MeshBasicMaterial({color:0xeeee44,  depthWrite:false});
+  var MRED    = new THREE.MeshBasicMaterial({color:0xff5555,  depthWrite:false});
 
-function makeFoulLines() {
-  const c = corners();
-  line3(c[0], c[1], 0xffffff);
-  line3(c[0], c[3], 0xffffff);
-}
-
-function makeWalls() {
-  const c = corners();
-  wall(c[1], c[2], WALL_H, 0x606060); // right-field wall
-  wall(c[2], c[3], WALL_H, 0x4a4a50); // left-field wall (slightly different shade)
-}
-
-function wall(a, b, h, color) {
-  const dir = b.clone().sub(a); const len = dir.length(); dir.normalize();
-  const mid = a.clone().lerp(b, 0.5);
-  const angle = Math.atan2(dir.x, dir.z);
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(len, h, 1.2),
-    new THREE.MeshLambertMaterial({ color })
-  );
-  mesh.position.set(mid.x, h/2, mid.z);
-  mesh.rotation.y = angle;
-  mesh.castShadow = true; mesh.receiveShadow = true;
-  scene.add(mesh);
-}
-
-function makePoolLine() {
-  const p = POOL;
-  const pts = [
-    [0,0,0],[p,0,-p],[0,0,-p*2],[-p,0,-p],[0,0,0]
-  ];
-  for (let i=0;i<pts.length-1;i++) {
-    line3(
-      new THREE.Vector3(...pts[i]),
-      new THREE.Vector3(...pts[i+1]),
-      0xffff00
-    );
+  function groundLine(x1,z1,x2,z2,width,mat) {
+    var dx=x2-x1, dz=z2-z1;
+    var len=Math.sqrt(dx*dx+dz*dz);
+    if(len<0.001) return;
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(width,len), mat);
+    m.rotation.x = -Math.PI/2;
+    m.rotation.z = -Math.atan2(dx,dz);
+    m.position.set((x1+x2)/2, 0.02, (z1+z2)/2);
+    fieldGroup.add(m);
   }
-}
 
-function makePitcherStripe() {
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(POOL*2, 0.9),
-    new THREE.MeshLambertMaterial({ color: 0xff8800 })
-  );
-  mesh.rotation.x = -Math.PI/2;
-  mesh.position.set(0, 0.05, PITCH_Z);
-  scene.add(mesh);
-}
+  var LW = 0.14*FT;
 
-function makeHomePlate() {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 0.08, 2),
-    new THREE.MeshLambertMaterial({ color: 0xffffff })
-  );
-  mesh.position.set(0, 0.04, 1);
-  scene.add(mesh);
-}
+  // Foul lines: home(0,0) -> RF(+FS,-FS), home->LF(-FS,-FS)
+  groundLine(0,0,  FS,-FS, LW, MWHITE);
+  groundLine(0,0, -FS,-FS, LW, MWHITE);
+  // Back walls
+  groundLine( FS,-FS, 0,-2*FS, LW, MWHITE);
+  groundLine(-FS,-FS, 0,-2*FS, LW, MWHITE);
 
-function makeCan() {
+  // Pool line (inner diamond at PL)
+  var PW = LW*2;
+  groundLine(0,0,  PL,-PL, PW, MYELLOW);
+  groundLine(0,0, -PL,-PL, PW, MYELLOW);
+  groundLine( PL,-PL, 0,-2*PL, PW, MYELLOW);
+  groundLine(-PL,-PL, 0,-2*PL, PW, MYELLOW);
+
+  // Pitcher's stripe at 40ft
+  groundLine(-PS,-PS, PS,-PS, LW*2.5, MRED);
+
+  // Home plate
+  var hp = new THREE.Mesh(new THREE.PlaneGeometry(0.45*FT,0.55*FT), MWHITE);
+  hp.rotation.x = -Math.PI/2;
+  hp.position.set(0, 0.025, 0.3*FT);
+  fieldGroup.add(hp);
+
+  buildWalls();
+  buildEnvironment();
+
+  // Double-play can
   canMesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.48, 0.48, 2.6, 12),
-    new THREE.MeshLambertMaterial({ color: 0xff5500 })
+    new THREE.CylinderGeometry(0.11*FT,0.11*FT,0.23*FT,12),
+    new THREE.MeshLambertMaterial({color:0x22aa44})
   );
-  canMesh.position.set(0, 1.3, CAN_Z);
+  canMesh.position.set(0, 0.115*FT, -CD);
   canMesh.castShadow = true;
-  scene.add(canMesh);
-  GS.canUp = true;
+  fieldGroup.add(canMesh);
 }
 
-function makeEnvironment() {
-  // Distant dam
-  const dam = new THREE.Mesh(
-    new THREE.BoxGeometry(200, 20, 8),
-    new THREE.MeshLambertMaterial({ color: 0x999988 })
-  );
-  dam.position.set(0, 10, CF_Z - 24);
-  scene.add(dam);
-  // Vertical concrete lines on dam
-  for (let i=-5;i<=5;i++) {
-    const lm = new THREE.Mesh(
-      new THREE.BoxGeometry(0.4,20,8.2),
-      new THREE.MeshLambertMaterial({ color:0x888877 })
-    );
-    lm.position.set(i*18, 10, CF_Z-24);
-    scene.add(lm);
+function buildWalls() {
+  var WMAT  = new THREE.MeshLambertMaterial({color:0x7a5230});
+  var LFMAT = new THREE.MeshLambertMaterial({color:0x5c3c1a});
+  var PMAT  = new THREE.MeshLambertMaterial({color:0x2a7a2a});
+
+  function makeWall(x1,z1,x2,z2,h,mat,addPad) {
+    var dx=x2-x1, dz=z2-z1;
+    var len=Math.sqrt(dx*dx+dz*dz);
+    var m = new THREE.Mesh(new THREE.BoxGeometry(WW,h,len), mat);
+    m.rotation.y = Math.atan2(dx,dz);
+    m.position.set((x1+x2)/2, h/2, (z1+z2)/2);
+    m.castShadow = m.receiveShadow = true;
+    fieldGroup.add(m);
+    if (addPad) {
+      var pm = new THREE.Mesh(new THREE.BoxGeometry(WW*1.1,h*0.42,len), PMAT);
+      pm.rotation.y = Math.atan2(dx,dz);
+      pm.position.set((x1+x2)/2, h*0.21, (z1+z2)/2);
+      fieldGroup.add(pm);
+    }
   }
-  // Palm trees along field edges
-  const palms = [
-    [-SIDE-12,0,-SIDE*0.4],[-SIDE-12,0,-SIDE*0.9],[-SIDE-12,0,-SIDE*1.4],
-    [ SIDE+12,0,-SIDE*0.4],[ SIDE+12,0,-SIDE*0.9],[ SIDE+12,0,-SIDE*1.4],
-  ];
-  palms.forEach(p => palmTree(p[0],p[1],p[2]));
-  // Bleachers behind home
-  const bl = new THREE.Mesh(
-    new THREE.BoxGeometry(32,9,10),
-    new THREE.MeshLambertMaterial({ color:0x665544 })
-  );
-  bl.position.set(0,4.5,28);
-  scene.add(bl);
+
+  // Left-center wall (tallest, 12ft)
+  makeWall(-FS,-FS, 0,-2*FS, WH, LFMAT, true);
+  // Right-center
+  makeWall( FS,-FS, 0,-2*FS, WH*0.75, WMAT, false);
+  // Left foul (shorter)
+  makeWall(0,0, -FS,-FS, 3.5*FT, WMAT, false);
+  // Right foul
+  makeWall(0,0,  FS,-FS, 3.5*FT, WMAT, false);
 }
 
-function palmTree(x, y, z) {
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.3,0.55,11,6),
-    new THREE.MeshLambertMaterial({ color:0x8b6914 })
-  );
-  trunk.position.set(x,5.5,z); scene.add(trunk);
-  const top = new THREE.Mesh(
-    new THREE.SphereGeometry(3.5,6,4),
-    new THREE.MeshLambertMaterial({ color:0x228822 })
-  );
-  top.scale.y = 0.42; top.position.set(x,12.5,z); scene.add(top);
-}
-
-function line3(a, b, color) {
-  const geo = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(a.x, a.y+0.05, a.z),
-    new THREE.Vector3(b.x, b.y+0.05, b.z),
-  ]);
-  scene.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color })));
-}
-
-// ── CHARACTERS ────────────────────────────────────────────────
-function humanoid(color) {
-  const g = new THREE.Group();
-  const m = new THREE.MeshLambertMaterial({ color });
-  function box(w,h,d,x,y,z,rx=0,rz=0) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
-    mesh.position.set(x,y,z); mesh.rotation.set(rx,0,rz);
-    mesh.castShadow = true; g.add(mesh); return mesh;
+function buildEnvironment() {
+  // Hills
+  var hillMat = new THREE.MeshLambertMaterial({color:0x7a9060});
+  for (var i=0; i<9; i++) {
+    var r=(30+Math.random()*35)*FT, h=(8+Math.random()*18)*FT;
+    var m = new THREE.Mesh(new THREE.SphereGeometry(r,8,4,0,Math.PI*2,0,Math.PI/2), hillMat);
+    var a = (i/9)*Math.PI*2;
+    m.position.set(Math.cos(a)*190*FT, 0, Math.sin(a)*190*FT);
+    scene.add(m);
   }
-  function cyl(r,h,x,y,z,rx=0,rz=0,seg=7) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),m);
-    mesh.position.set(x,y,z); mesh.rotation.set(rx,0,rz);
-    mesh.castShadow = true; g.add(mesh); return mesh;
+
+  // Concrete dam structures
+  var concMat = new THREE.MeshLambertMaterial({color:0x9a9888});
+  var dxArr = [-3,-2,-1,1,2,3];
+  for (var j=0; j<dxArr.length; j++) {
+    var xi = dxArr[j];
+    var w2=(4+Math.random()*4)*FT, h2=(12+Math.random()*18)*FT;
+    var m2 = new THREE.Mesh(new THREE.BoxGeometry(w2,h2,4*FT), concMat);
+    m2.position.set(xi*22*FT, h2/2, -115*FT);
+    m2.castShadow = true;
+    scene.add(m2);
   }
-  box(1.4,2.0,0.8, 0,2.6,0);                              // torso
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.54,8,6),m);
-  head.position.set(0,4.2,0); head.castShadow=true; g.add(head);
-  const lArm = cyl(0.2,1.9, -1.0,2.5,0, 0,  0.3);
-  const rArm = cyl(0.2,1.9,  1.0,2.5,0, 0, -0.3);
-  const lLeg = cyl(0.24,2.1, -0.4,1.05,0);
-  const rLeg = cyl(0.24,2.1,  0.4,1.05,0);
-  g.userData = { lArm, rArm, lLeg, rLeg };
+
+  // Palm trees
+  var trunkMat = new THREE.MeshLambertMaterial({color:0x8B6914});
+  var leafMat  = new THREE.MeshLambertMaterial({color:0x228B22});
+  var palms = [[50*FT,-82*FT],[-55*FT,-90*FT],[82*FT,-62*FT],[-80*FT,-70*FT]];
+  for (var k=0; k<palms.length; k++) {
+    var px=palms[k][0], pz=palms[k][1];
+    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4*FT,0.6*FT,8*FT,8), trunkMat);
+    trunk.position.set(px, 4*FT, pz);
+    scene.add(trunk);
+    var leaves = new THREE.Mesh(new THREE.ConeGeometry(3.5*FT,4*FT,8), leafMat);
+    leaves.position.set(px, 9.5*FT, pz);
+    scene.add(leaves);
+  }
+}
+
+// ── CHARACTERS ──
+function makeHumanoid(bodyColor) {
+  var g = new THREE.Group();
+  var SKIN  = new THREE.MeshLambertMaterial({color:0xf4c2a1});
+  var SHIRT = new THREE.MeshLambertMaterial({color:bodyColor});
+  var PANTS = new THREE.MeshLambertMaterial({color:0x2a2a55});
+  var SHOE  = new THREE.MeshLambertMaterial({color:0x111111});
+
+  function seg(w,h,d,mat,px,py,pz) {
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(px,py,pz);
+    m.castShadow = true;
+    return m;
+  }
+
+  // Torso
+  var torso = seg(0.5*FT,0.6*FT,0.28*FT, SHIRT, 0,1.2*FT,0);
+  g.add(torso);
+
+  // Head
+  var head = new THREE.Mesh(new THREE.SphereGeometry(0.17*FT,8,8), SKIN);
+  head.position.y = 1.78*FT;
+  head.castShadow = true;
+  g.add(head);
+
+  // Arms
+  var armL = new THREE.Group();
+  armL.position.set(-0.32*FT, 1.42*FT, 0);
+  var alS = seg(0.14*FT,0.48*FT,0.14*FT, SHIRT, 0,-0.24*FT,0);
+  armL.add(alS);
+  g.add(armL);
+
+  var armR = new THREE.Group();
+  armR.position.set(0.32*FT, 1.42*FT, 0);
+  var arS = seg(0.14*FT,0.48*FT,0.14*FT, SHIRT, 0,-0.24*FT,0);
+  armR.add(arS);
+  g.add(armR);
+
+  // Legs
+  var legL = new THREE.Group();
+  legL.position.set(-0.14*FT, 0.88*FT, 0);
+  legL.add(seg(0.18*FT,0.52*FT,0.18*FT, PANTS, 0,-0.26*FT,0));
+  legL.add(seg(0.2*FT,0.1*FT,0.32*FT, SHOE, 0,-0.57*FT,0.06*FT));
+  g.add(legL);
+
+  var legR = new THREE.Group();
+  legR.position.set(0.14*FT, 0.88*FT, 0);
+  legR.add(seg(0.18*FT,0.52*FT,0.18*FT, PANTS, 0,-0.26*FT,0));
+  legR.add(seg(0.2*FT,0.1*FT,0.32*FT, SHOE, 0,-0.57*FT,0.06*FT));
+  g.add(legR);
+
+  g.userData = {armL:armL, armR:armR, legL:legL, legR:legR};
   return g;
 }
 
-function makeBatter() {
-  batGroup = humanoid(0xcc8855);
-  batGroup.position.set(0,0,1.5);
-  // Bat pivot
-  const pivot = new THREE.Group();
-  pivot.position.set(0,2.7,0);
-  const bat = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.055,0.1,3.8*FT*2,6),
-    new THREE.MeshLambertMaterial({ color:0x8b4513 })
+function buildBatter() {
+  batterMesh = makeHumanoid(0xcc2200);
+  batterMesh.position.set(0, 0, 0.5*FT);
+  charGroup.add(batterMesh);
+
+  // Bat pivot on right arm
+  var batPivot = new THREE.Group();
+  batPivot.position.set(0, -0.28*FT, 0);
+  batPivot.rotation.z = -0.3;
+
+  var bat = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018*FT, 0.032*FT, 0.95*FT, 8),
+    new THREE.MeshLambertMaterial({color:0x7a3a10})
   );
-  bat.rotation.z = Math.PI/2; bat.position.set(2.1,0,0); bat.castShadow=true;
-  pivot.add(bat);
-  pivot.rotation.y = -0.9;
-  batGroup.add(pivot);
-  batGroup.userData.pivot = pivot;
-  scene.add(batGroup);
+  bat.position.set(0, -0.48*FT, 0);
+  bat.castShadow = true;
+  batPivot.add(bat);
+  batterMesh.userData.armR.add(batPivot);
+  batterMesh.userData.batPivot = batPivot;
+
+  // Stance
+  batterMesh.userData.armL.rotation.z =  0.7;
+  batterMesh.userData.armR.rotation.z = -0.7;
+  batterMesh.userData.legL.rotation.x = -0.08;
+  batterMesh.userData.legR.rotation.x =  0.08;
 }
 
-function makePitcher() {
-  pitchGroup = humanoid(0xcc8855);
-  pitchGroup.position.set(0,0,PITCH_Z);
-  pitchGroup.rotation.y = Math.PI;
-  scene.add(pitchGroup);
+function buildPitcher() {
+  pitcherMesh = makeHumanoid(0xcc2200);
+  pitcherMesh.position.set(0, 0, -PS);
+  pitcherMesh.rotation.y = Math.PI;
+  charGroup.add(pitcherMesh);
 }
 
-function makeBall() {
+function defPositions(n) {
+  var mid  = -(PL+FS)/2;
+  var deep = -(PL+FS*0.85);
+  var all = [
+    {x:0,         z:mid},
+    {x:-FS*0.45,  z:mid},
+    {x: FS*0.45,  z:mid},
+    {x:-FS*0.75,  z:deep},
+    {x: FS*0.75,  z:deep},
+    {x:0,         z:deep}
+  ];
+  return all.slice(0,n);
+}
+
+function buildDefenders() {
+  for (var k=0; k<defMeshes.length; k++) charGroup.remove(defMeshes[k]);
+  defMeshes = [];
+  var pos = defPositions(G.defenderCount);
+  for (var i=0; i<G.defenderCount; i++) {
+    var d = makeHumanoid(0x1144cc);
+    d.position.set(pos[i].x, 0, pos[i].z);
+    d.userData.tgtX = pos[i].x;
+    d.userData.tgtZ = pos[i].z;
+    d.userData.running = false;
+    d.userData.walkOff = Math.random()*Math.PI*2;
+    charGroup.add(d);
+    defMeshes.push(d);
+  }
+}
+
+// ── BALL ──
+function buildBall() {
   ballMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.37,10,8),
-    new THREE.MeshLambertMaterial({ color:0xccdd44 })
+    new THREE.SphereGeometry(0.034*FT,14,14),
+    new THREE.MeshLambertMaterial({color:0xb8e030})
   );
   ballMesh.castShadow = true;
+  ballMesh.visible = false;
   scene.add(ballMesh);
-  resetBall();
 }
 
-function spawnDefenders(n) {
-  defenders.forEach(d => scene.remove(d));
-  defenders=[]; defTargets=[];
-  const pos = [
-    [0,0,-(POOL+(SIDE-POOL)*0.45)],
-    [-POOL*0.75,0,-(POOL+(SIDE-POOL)*0.55)],
-    [ POOL*0.75,0,-(POOL+(SIDE-POOL)*0.55)],
-    [0,0,-SIDE*1.35],
-    [-POOL*0.45,0,-SIDE*1.1],
-    [ POOL*0.45,0,-SIDE*1.1],
-  ];
-  for (let i=0;i<n;i++) {
-    const d = humanoid(0x2255bb);
-    const p = pos[i]||pos[0];
-    d.position.set(p[0],p[1],p[2]);
-    d.userData.home = d.position.clone();
-    d.userData.spd  = 7+Math.random()*3;
-    scene.add(d); defenders.push(d); defTargets.push(null);
-  }
+function launchBall(src,dst,apex,dur,phase) {
+  ball.src.copy(src);
+  ball.dst.copy(dst);
+  ball.apex = apex;
+  ball.duration = dur;
+  ball.t = 0;
+  ball.phase = phase || 'flight';
+  ball.active = true;
+  ballMesh.visible = true;
 }
 
-// ── GAME FLOW ─────────────────────────────────────────────────
+// ── GAME START ──
 function startGame() {
-  const t1  = document.getElementById('team1').value.trim()||'Home';
-  const t2  = document.getElementById('team2').value.trim()||'Away';
-  const pc  = +document.getElementById('players').value;
-  const dc  = +document.getElementById('defenders').value;
-
-  GS.teams[0].name = t1; GS.teams[1].name = t2; GS.defCount = dc;
-  for (let i=0;i<pc;i++) {
-    GS.teams[0].players.push(`${t1} #${i+1}`);
-    GS.teams[1].players.push(`${t2} #${i+1}`);
-  }
+  G = newState();
+  G.names.home = document.getElementById('home-name').value || 'Home';
+  G.names.away = document.getElementById('away-name').value || 'Away';
+  G.playerCount   = +document.getElementById('player-count').value;
+  G.defenderCount = +document.getElementById('defender-count').value;
+  G.maxInnings    = +document.getElementById('inning-count').value;
 
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('hud').style.display = 'block';
-  document.getElementById('lbl1').textContent = t1;
-  document.getElementById('lbl2').textContent = t2;
+  document.getElementById('home-label').textContent = G.names.home;
+  document.getElementById('away-label').textContent = G.names.away;
 
-  initThree(); buildField(); makeBatter(); makePitcher(); makeBall();
-  spawnDefenders(dc);
-  updateHUD(); setPhase('ready'); loop();
+  initThree();
+
+  charGroup = new THREE.Group();
+  scene.add(charGroup);
+
+  buildField();
+  buildBall();
+  buildBatter();
+  buildPitcher();
+  buildDefenders();
+
+  G.phase = 'ready';
+  updateHUD();
+  requestAnimationFrame(loop);
+  setTimeout(doPitch, 1200);
 }
 
-function setPhase(p) {
-  GS.phase = p;
-  if (p==='ready') {
-    resetBall(); resetDefenders(); resetBatterPose(); resetCan();
-    document.getElementById('timing-wrap').style.display='none';
-    document.getElementById('instructions').textContent='Press SPACE to start pitch';
-    updateHUD();
-  } else if (p==='pitching') {
-    startPitch();
-    document.getElementById('instructions').textContent='';
-  } else if (p==='ball_flight') {
-    document.getElementById('timing-wrap').style.display='none';
-  } else if (p==='inning_break') {
-    setTimeout(nextHalfInning, 3000);
-  } else if (p==='game_over') {
-    endGame();
+function restartGame() {
+  if (renderer) {
+    renderer.dispose();
+    var c = document.getElementById('canvas-container');
+    while(c.firstChild) c.removeChild(c.firstChild);
+    renderer = null; scene = null;
   }
+  window.removeEventListener('keydown', onKey);
+  window.removeEventListener('resize', onResize);
+  document.getElementById('overlay-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+  timing.active = false;
 }
 
-function onSpace() {
-  if (GS.phase==='ready')                          setPhase('pitching');
-  else if (GS.phase==='pitching'&&GS.tim.active)   doSwing();
+// ── PITCH ──
+function doPitch() {
+  if (G.phase === 'game_over' || G.phase === 'inning_break') return;
+  G.phase = 'pitching';
+  timing.active = false;
+  ball.phase = 'idle';
+  ballMesh.visible = false;
+
+  pitchAnim.on = true; pitchAnim.t = 0;
+  document.getElementById('timing-container').style.display = 'none';
+  updateHUD();
+
+  setTimeout(releasePitch, 720);
 }
 
-function doSwing() {
-  GS.tim.active = false;
-  document.getElementById('timing-wrap').style.display='none';
-  const q = quality(GS.tim.pos);
-  swinging=true; swingT=0;
-  const r = hitResult(q);
-  GS.hitResult = r;
-  launchBall(r);
+function releasePitch() {
+  if (G.phase !== 'pitching') return;
+  var src = new THREE.Vector3(0, 1.3*FT, -PS+0.3*FT);
+  var dst = new THREE.Vector3(0, 0.85*FT, 0.35*FT);
+  launchBall(src, dst, 1.6*FT, 1.05, 'pitch');
+
+  timing.cursor = 0; timing.dir = 1; timing.active = true;
+  document.getElementById('timing-container').style.display = 'block';
+  updateTimingBar();
+
+  camDst.pos.set(0, 8*FT, 22*FT);
+  camDst.tgt.set(0, 0, -8*FT);
 }
 
-function quality(p) {
-  if (p>=0.38&&p<=0.62) return 'perfect';
-  if (p>=0.22&&p<=0.78) return 'good';
-  if (p>=0.08&&p<=0.92) return 'weak';
-  return 'miss';
+// ── SWING ──
+function playerSwing() {
+  if (!timing.active || G.phase !== 'pitching') return;
+  timing.active = false;
+  document.getElementById('timing-container').style.display = 'none';
+  G.phase = 'ball_flight';
+
+  var c = timing.cursor;
+  var quality;
+  if      (c >= timing.perf0 && c <= timing.perf1) quality = 'perfect';
+  else if (c >= timing.good0 && c <= timing.good1) quality = 'good';
+  else                                              quality = 'miss';
+
+  swingAnim.on = true; swingAnim.t = 0;
+  resolveSwing(quality);
 }
 
-function hitResult(q) {
-  const r = Math.random();
-  if (q==='miss') return 'miss';
-  if (q==='perfect') {
-    if (r<0.12) return 'homerun'; if (r<0.27) return 'triple';
-    if (r<0.52) return 'double';  if (r<0.82) return 'single'; return 'foul';
-  }
-  if (q==='good') {
-    if (r<0.05) return 'homerun'; if (r<0.14) return 'triple';
-    if (r<0.34) return 'double';  if (r<0.62) return 'single';
-    if (r<0.79) return 'groundout'; return 'foul';
-  }
-  // weak
-  if (r<0.44) return 'foul'; if (r<0.75) return 'groundout'; return 'single';
-}
-
-function launchBall(result) {
-  setPhase('ball_flight');
-  const spray = (Math.random()-0.5)*1.3;
-  const sx = Math.sin(spray);
-  const start = ballMesh.position.clone();
-  let target, peak, dur;
-
-  if (result==='homerun')  { target=new THREE.Vector3(sx*SIDE*0.7,0,CF_Z-12); peak=40; dur=3.1; }
-  else if (result==='triple') { target=new THREE.Vector3(sx*SIDE*0.8,2,CF_Z+8);  peak=22; dur=2.7; }
-  else if (result==='double') { target=new THREE.Vector3(sx*SIDE*0.7,0,CF_Z+16); peak=15; dur=2.3; }
-  else if (result==='single') { target=new THREE.Vector3(sx*POOL*0.9,0,-(POOL+(SIDE-POOL)*0.5)); peak=10; dur=1.9; }
-  else if (result==='groundout') { target=new THREE.Vector3(sx*POOL*0.55,0,-POOL*1.3); peak=0.8; dur=1.3; }
-  else if (result==='foul')   { target=new THREE.Vector3((Math.random()-0.5)*POOL*0.7,0,-POOL*0.45); peak=5; dur=0.9; }
-  else { target=new THREE.Vector3(0,0,1); peak=0.5; dur=0.55; }
-
-  ballAnim = { start, target, peak, t:0, dur, result, done:false, ground:result==='groundout' };
-
-  if (result!=='foul'&&result!=='miss') {
-    defenders.forEach((_,i) => {
-      defTargets[i] = target.clone().add(
-        new THREE.Vector3((Math.random()-0.5)*4,0,(Math.random()-0.5)*4)
-      );
-    });
-  }
-
-  camGoal.set(0,15,24);
-}
-
-function landBall() {
-  const result = GS.hitResult;
-  const pn = GS.pitchNum;
-  let msg='', col='#f0c040', isOut=false, scored=0;
-
-  if (result==='miss') {
-    GS.pitchNum++;
-    if (GS.pitchNum>3) { isOut=true; msg='STRIKEOUT!'; col='#ff4444'; }
-    else { msg='MISS!'; col='#ff8844'; }
-  } else if (result==='foul') {
-    if (pn===3) { isOut=true; msg='FOUL — OUT!'; col='#ff4444'; }
-    else { GS.pitchNum++; msg='FOUL'; col='#ff8844'; }
-  } else if (result==='groundout') { isOut=true; msg='GROUND OUT!'; col='#ff4444'; }
-  else if (result==='single')  { scored=advBases(1); msg='SINGLE!';    col='#44ee88'; }
-  else if (result==='double')  { scored=advBases(2); msg='DOUBLE!';    col='#44ddff'; }
-  else if (result==='triple')  { scored=advBases(3); msg='TRIPLE!';    col='#ff88ff'; }
-  else if (result==='homerun') {
-    let r=1; GS.bases.forEach(b=>{ if(b) r++; });
-    GS.bases=[false,false,false]; scored=r;
-    msg='HOME RUN!!!'; col='#f0c040';
+function resolveSwing(quality) {
+  if (quality === 'miss') {
+    G.pitches++;
+    ball.phase = 'stopped'; ballMesh.visible = false;
+    if (G.pitches >= 3) {
+      setTimeout(function(){ showResult('STRUCK OUT!','out',recordOut); }, 400);
+    } else {
+      showFlash('SWING AND A MISS','strike');
+      setTimeout(doPitch, 1300);
+    }
+    updateHUD(); return;
   }
 
-  if (scored>0) GS.scores[GS.topHalf?1:0] += scored;
-  flash(msg, col);
-
-  if (isOut) {
-    GS.outs++;
-    if (GS.outs>=3) setTimeout(()=>setPhase('inning_break'),2000);
-    else setTimeout(nextAt,2000);
-  } else if (result!=='miss'&&result!=='foul') {
-    setTimeout(nextAt,2000);
+  var r = Math.random(), hitType;
+  if (quality === 'perfect') {
+    if      (r<0.12) hitType='homerun';
+    else if (r<0.28) hitType='triple';
+    else if (r<0.52) hitType='double';
+    else if (r<0.78) hitType='single';
+    else             hitType='grounder_single';
   } else {
-    setTimeout(()=>setPhase('ready'),1400);
+    if      (r<0.05) hitType='homerun';
+    else if (r<0.13) hitType='triple';
+    else if (r<0.28) hitType='double';
+    else if (r<0.52) hitType='single';
+    else if (r<0.72) hitType='grounder_single';
+    else if (r<0.88) hitType='grounder_out';
+    else             hitType='foul';
   }
+
+  if (hitType === 'foul') {
+    G.pitches++;
+    ball.phase = 'stopped'; ballMesh.visible = false;
+    if (G.pitches >= 3) {
+      setTimeout(function(){ showResult('FOUL — OUT!','out',recordOut); }, 400);
+    } else {
+      showFlash('FOUL BALL','foul');
+      setTimeout(doPitch, 1300);
+    }
+    updateHUD(); return;
+  }
+
+  hitBall(hitType);
+}
+
+function hitBall(hitType) {
+  ball.hitType = hitType;
+  var spread = (Math.random()-0.5)*0.9;
+  var src = new THREE.Vector3(0, 1.0*FT, 0.3*FT);
+  var dst, apex, dur;
+
+  switch(hitType) {
+    case 'homerun':       dst=new THREE.Vector3(Math.sin(spread*0.4)*FS*0.7,0,-2.1*FS);  apex=26*FT; dur=3.8; break;
+    case 'triple':        dst=new THREE.Vector3(Math.sin(spread*0.5)*FS*0.85,0,-1.85*FS);apex=19*FT; dur=3.2; break;
+    case 'double':        dst=new THREE.Vector3(Math.sin(spread*0.6)*FS*0.55,0,-(PL+FS)*0.5-FS*0.35);apex=13*FT;dur=2.5;break;
+    case 'single':        dst=new THREE.Vector3(Math.sin(spread*0.7)*FS*0.3,0,-(PL+FS*0.42));apex=8*FT;dur=2.0;break;
+    case 'grounder_single':dst=new THREE.Vector3(Math.sin(spread*0.5)*FS*0.28,0,-(PL+FS*0.38));apex=0.7*FT;dur=2.1;break;
+    case 'grounder_out':  dst=new THREE.Vector3(Math.sin(spread*0.4)*PL*0.5,0,-PL*0.55);apex=0.45*FT;dur=1.7;break;
+    default:              dst=new THREE.Vector3(0,0,-FS);apex=10*FT;dur=2.5;
+  }
+
+  launchBall(src, dst, apex, dur, 'flight');
+  sendDefenders(dst);
+
+  camDst.pos.set(0, 15*FT, 18*FT);
+  camDst.tgt.copy(dst); camDst.tgt.y += 5*FT; camDst.tgt.z += 5*FT;
+
+  var delay = dur*1000 + 650;
+  setTimeout(function(){ resolvePlay(hitType); }, delay);
+}
+
+function resolvePlay(hitType) {
+  G.phase = 'result';
+  G.pitches = 0;
+
+  switch(hitType) {
+    case 'homerun':
+      showResult('HOME RUN!','hr',function(){ advanceRunners(4); nextBatter(); });
+      break;
+    case 'triple':
+      showResult('TRIPLE!','triple',function(){ advanceRunners(3); nextBatter(); });
+      break;
+    case 'double':
+      showResult('DOUBLE!','double',function(){ advanceRunners(2); nextBatter(); });
+      break;
+    case 'single':
+      showResult('SINGLE!','single',function(){ advanceRunners(1); nextBatter(); });
+      break;
+    case 'grounder_single':
+      if (Math.random()<0.32) {
+        showResult('FIELDED — OUT!','out',recordOut);
+      } else {
+        showResult('SINGLE! (grounder)','single',function(){ advanceRunners(1); nextBatter(); });
+      }
+      break;
+    case 'grounder_out':
+      showResult('GROUND OUT!','out',recordOut);
+      break;
+    default: nextBatter();
+  }
+}
+
+// ── RUNNERS / SCORING ──
+function advanceRunners(bases) {
+  var runs=0, nr=[false,false,false];
+  for (var i=2; i>=0; i--) {
+    if (!G.runners[i]) continue;
+    var np = i+bases;
+    if (np>=3) runs++; else nr[np]=true;
+  }
+  var bp=bases-1;
+  if (bp>=3) runs++; else if(bp>=0) nr[bp]=true;
+  G.runners=nr;
+  var team = G.half==='top' ? 'away' : 'home';
+  G.score[team]+=runs;
   updateHUD();
 }
 
-function advBases(n) {
-  let sc=0; const nx=[false,false,false];
-  for (let i=2;i>=0;i--) {
-    if (!GS.bases[i]) continue;
-    const np=i+n; if (np>=3) sc++; else nx[np]=true;
-  }
-  const bp=n-1;
-  if (bp>=3) sc++; else if (bp>=0) nx[bp]=true;
-  GS.bases=nx; return sc;
+function recordOut() {
+  G.outs++;
+  ball.phase='stopped'; ballMesh.visible=false;
+  timing.active=false;
+  document.getElementById('timing-container').style.display='none';
+  if (G.outs>=3) endHalf(); else nextBatter();
 }
 
-function nextAt() {
-  const t = GS.topHalf ? GS.teams[1] : GS.teams[0];
-  GS.batterIdx = (GS.batterIdx+1) % t.players.length;
-  GS.pitchNum=1;
-  setPhase('ready');
-}
+function nextBatter() {
+  G.pitches=0;
+  ball.phase='stopped'; ballMesh.visible=false;
+  timing.active=false;
+  document.getElementById('timing-container').style.display='none';
 
-function nextHalfInning() {
-  GS.bases=[false,false,false]; GS.outs=0; GS.pitchNum=1; GS.batterIdx=0;
-  if (GS.topHalf) { GS.topHalf=false; }
-  else { GS.inning++; GS.topHalf=true; if (GS.inning>9){ setPhase('game_over'); return; } }
-  spawnDefenders(GS.defCount);
-  flash(`Inning ${GS.inning} ${GS.topHalf?'▲':'▼'}`, '#88aaff');
-  setTimeout(()=>setPhase('ready'),1800);
+  var side = G.half==='top' ? 'away' : 'home';
+  G.batterIdx[side]=(G.batterIdx[side]+1)%G.playerCount;
+
+  resetDefenders();
+  camDst.pos.set(0,8*FT,22*FT); camDst.tgt.set(0,0,-8*FT);
   updateHUD();
+  setTimeout(function(){ G.phase='ready'; setTimeout(doPitch,800); },600);
+}
+
+function endHalf() {
+  G.outs=0; G.runners=[false,false,false]; G.pitches=0;
+  timing.active=false;
+  document.getElementById('timing-container').style.display='none';
+
+  if (G.half==='top') { G.half='bottom'; }
+  else               { G.half='top'; G.inning++; }
+
+  if (G.inning > G.maxInnings) { endGame(); return; }
+
+  G.phase='inning_break';
+  updateHUD();
+
+  var nextSide = G.half==='top' ? G.names.away : G.names.home;
+  showOverlay(
+    'End of Half-Inning',
+    '<strong>'+G.names.away+'</strong>: '+G.score.away+'<br>'+
+    '<strong>'+G.names.home+'</strong>: '+G.score.home+'<br><br>'+
+    'Next: '+(G.half==='top'?'Top':'Bottom')+' of Inning '+G.inning+'<br>'+
+    '<em>'+nextSide+'</em> bats',
+    'Continue &#9654;'
+  );
 }
 
 function endGame() {
-  const [h,a]=[GS.scores[0],GS.scores[1]];
-  const [hn,an]=[GS.teams[0].name,GS.teams[1].name];
-  const w = h>a?hn:a>h?an:'Tie';
-  document.getElementById('final-score').innerHTML =
-    `${hn}: ${h} &mdash; ${an}: ${a}<br><span style="color:#f0c040">${w==='Tie'?'Tie Game!':w+' Wins!'}</span>`;
-  document.getElementById('gameover').style.display='flex';
-}
-
-// ── HUD ───────────────────────────────────────────────────────
-function updateHUD() {
-  document.getElementById('s1').textContent  = GS.scores[0];
-  document.getElementById('s2').textContent  = GS.scores[1];
-  document.getElementById('inn').textContent = GS.inning;
-  document.getElementById('outs').textContent= GS.outs;
-  document.getElementById('half').textContent= GS.topHalf?'▲':'▼';
-  document.getElementById('pitch-count').textContent=`Pitch ${GS.pitchNum} of 3`;
-  const t = GS.topHalf?GS.teams[1]:GS.teams[0];
-  document.getElementById('batter-name').textContent=`At Bat: ${t.players[GS.batterIdx]||''}`;
-  ['b1','b2','b3'].forEach((id,i)=>
-    document.getElementById(id).classList.toggle('on', GS.bases[i])
+  G.phase='game_over';
+  var h=G.score.home, a=G.score.away;
+  var winner = h>a ? G.names.home : a>h ? G.names.away : null;
+  showOverlay(
+    'GAME OVER',
+    (winner
+      ? '<span style="color:#ffd700;font-size:1.3em">'+winner+' wins!</span><br><br>'
+      : '<strong>Tie game!</strong><br><br>')+
+    '<strong>'+G.names.away+'</strong>: '+a+'<br>'+
+    '<strong>'+G.names.home+'</strong>: '+h+'<br><br>'+
+    '<em>Thanks for playing YFS Stickball!</em>',
+    'Play Again'
   );
 }
 
-function flash(msg,col='#f0c040') {
-  const el=document.getElementById('flash-msg');
-  el.textContent=msg; el.style.color=col; el.style.opacity='1';
-  if (flashTmr) clearTimeout(flashTmr);
-  flashTmr=setTimeout(()=>el.style.opacity='0',2100);
+function continueGame() {
+  document.getElementById('overlay-screen').style.display='none';
+  if (G.phase==='game_over') { restartGame(); return; }
+  buildDefenders();
+  updateHUD();
+  G.phase='ready';
+  setTimeout(doPitch, 1000);
 }
 
-// ── ANIMATION / UPDATE ────────────────────────────────────────
-function resetBall() {
-  ballMesh.position.set(0,2,PITCH_Z-0.5); ballMesh.visible=true; ballAnim=null;
+// ── DEFENDERS ──
+function sendDefenders(target) {
+  var spread=18*FT;
+  for (var i=0; i<defMeshes.length; i++) {
+    var d=defMeshes[i];
+    d.userData.tgtX = clamp(target.x+(Math.random()-0.5)*spread, -FS+3*FT, FS-3*FT);
+    d.userData.tgtZ = Math.min(-PL-2*FT, target.z+(Math.random()-0.5)*spread);
+    d.userData.running=true;
+  }
 }
-function resetBatterPose() {
-  if (batGroup.userData.pivot) { batGroup.userData.pivot.rotation.y=-0.9; batGroup.userData.pivot.rotation.x=0; }
-  swinging=false; swingT=0;
-}
+
 function resetDefenders() {
-  defenders.forEach((d,i)=>{ if(d.userData.home) d.position.copy(d.userData.home); defTargets[i]=null; });
-}
-function resetCan() {
-  if (canMesh&&!GS.canUp) { canMesh.rotation.z=0; canMesh.position.set(0,1.3,CAN_Z); GS.canUp=true; }
-}
-
-function startPitch() {
-  const s = ballMesh.position.clone();
-  const e = new THREE.Vector3(0,1.2,1.0);
-  const c = new THREE.Vector3(0,5.5,(s.z+e.z)*0.5);
-  pitchAnim = { s, c, e, t:0, dur:1.3 };
-}
-
-function bezier3(p0,p1,p2,t) {
-  const i=1-t;
-  return new THREE.Vector3(
-    i*i*p0.x+2*i*t*p1.x+t*t*p2.x,
-    i*i*p0.y+2*i*t*p1.y+t*t*p2.y,
-    i*i*p0.z+2*i*t*p1.z+t*t*p2.z,
-  );
-}
-
-function update(dt) {
-  idleT += dt;
-  if (GS.phase==='pitching') doUpdatePitch(dt);
-  if (GS.phase==='ball_flight') doUpdateFlight(dt);
-  doSwingAnim(dt);
-  doDefenders(dt);
-  doCamera(dt);
-  doIdle();
-}
-
-function doUpdatePitch(dt) {
-  if (!pitchAnim) return;
-  pitchAnim.t = Math.min(pitchAnim.t+dt/pitchAnim.dur,1);
-  ballMesh.position.copy(bezier3(pitchAnim.s,pitchAnim.c,pitchAnim.e,pitchAnim.t));
-
-  if (pitchAnim.t>=1&&!GS.tim.active) {
-    GS.tim.active=true; GS.tim.pos=0; GS.tim.dir=1;
-    const tw=document.getElementById('timing-wrap');
-    tw.style.display='block';
-    document.getElementById('timing-zone').style.left='38%';
-    document.getElementById('timing-zone').style.width='24%';
-    document.getElementById('instructions').textContent='Press SPACE — SWING!';
-  }
-
-  if (GS.tim.active) {
-    GS.tim.pos += GS.tim.dir * dt * 1.1;
-    if (GS.tim.pos>=1){GS.tim.pos=1;GS.tim.dir=-1;}
-    if (GS.tim.pos<=0){GS.tim.pos=0;GS.tim.dir= 1;}
-    const p=GS.tim.pos;
-    const bar=document.getElementById('timing-bar');
-    bar.style.width=(p*100)+'%';
-    if (p>=0.38&&p<=0.62)      bar.style.background='#f0c040';
-    else if (p>=0.22&&p<=0.78) bar.style.background='#4caf50';
-    else                        bar.style.background='#e74c3c';
+  var pos=defPositions(G.defenderCount);
+  for (var i=0; i<defMeshes.length; i++) {
+    if(pos[i]){ defMeshes[i].userData.tgtX=pos[i].x; defMeshes[i].userData.tgtZ=pos[i].z; }
+    defMeshes[i].userData.running=false;
   }
 }
 
-function doUpdateFlight(dt) {
-  if (!ballAnim||ballAnim.done) return;
-  ballAnim.t = Math.min(ballAnim.t+dt/ballAnim.dur,1);
-  const t=ballAnim.t, {start:s,target:tg,peak:pk,ground:gr}=ballAnim;
+// ── HUD ──
+function updateHUD() {
+  document.getElementById('away-score').textContent = G.score.away;
+  document.getElementById('home-score').textContent = G.score.home;
+  document.getElementById('away-label').textContent = G.names.away;
+  document.getElementById('home-label').textContent = G.names.home;
 
-  if (gr) {
-    ballMesh.position.set(
-      s.x+(tg.x-s.x)*t,
-      0.37+Math.abs(Math.sin(t*Math.PI*3))*0.55,
-      s.z+(tg.z-s.z)*t
-    );
+  var arrow = G.half==='top' ? '&#9650;' : '&#9660;';
+  document.getElementById('inning-display').innerHTML = G.inning+arrow;
+  document.getElementById('outs-display').textContent = G.outs;
+
+  var side = G.half==='top' ? 'away' : 'home';
+  document.getElementById('batter-name').textContent =
+    G.names[side]+' — Batter #'+(G.batterIdx[side]+1);
+
+  for (var i=1; i<=3; i++) {
+    document.getElementById('pip-'+i).className =
+      'pitch-pip'+(i<=G.pitches?' used':'');
+  }
+
+  document.getElementById('base-1st').className = 'base-dot'+(G.runners[0]?' occupied':'');
+  document.getElementById('base-2nd').className = 'base-dot'+(G.runners[1]?' occupied':'');
+  document.getElementById('base-3rd').className = 'base-dot'+(G.runners[2]?' occupied':'');
+}
+
+function updateTimingBar() {
+  var track = document.getElementById('timing-track');
+  var w = track.offsetWidth || 330;
+  document.getElementById('timing-good').style.cssText =
+    'left:'+(timing.good0*w)+'px;width:'+((timing.good1-timing.good0)*w)+'px;';
+  document.getElementById('timing-perfect').style.cssText =
+    'left:'+(timing.perf0*w)+'px;width:'+((timing.perf1-timing.perf0)*w)+'px;';
+  document.getElementById('timing-cursor').style.left =
+    (timing.cursor*(w-5))+'px';
+}
+
+function showFlash(msg,cls) {
+  var el=document.getElementById('flash-msg');
+  el.textContent=msg; el.className=cls; el.style.opacity='1';
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){ el.style.opacity='0'; },2100);
+}
+
+function showResult(msg,cls,cb) {
+  showFlash(msg,cls);
+  if(cb) setTimeout(cb, 2300);
+}
+
+function showOverlay(title,body,btnTxt) {
+  document.getElementById('overlay-title').textContent=title;
+  document.getElementById('overlay-body').innerHTML=body;
+  document.getElementById('overlay-btn').innerHTML=btnTxt;
+  document.getElementById('overlay-screen').style.display='flex';
+}
+
+// ── INPUT ──
+function onKey(e) {
+  if(e.code==='Space'){ e.preventDefault(); playerSwing(); }
+}
+
+function onResize() {
+  if(!camera||!renderer) return;
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+}
+
+// ── ANIMATION ──
+function animBatter(dt) {
+  if(!batterMesh) return;
+  var ud=batterMesh.userData;
+  if(swingAnim.on) {
+    swingAnim.t=Math.min(1, swingAnim.t+dt/swingAnim.dur);
+    var p=eio(swingAnim.t);
+    if(ud.batPivot) ud.batPivot.rotation.z = -0.3+p*Math.PI*1.3;
+    if(ud.armR) ud.armR.rotation.x = -p*1.0;
+    if(ud.armL) ud.armL.rotation.x = -p*0.7;
+    if(swingAnim.t>=1) swingAnim.on=false;
   } else {
-    ballMesh.position.set(
-      s.x+(tg.x-s.x)*t,
-      s.y+(tg.y-s.y)*t + Math.sin(t*Math.PI)*pk,
-      s.z+(tg.z-s.z)*t
-    );
-  }
-  // Camera tracks ball
-  const bp=ballMesh.position;
-  camGoal.set(bp.x*0.22, Math.max(8,bp.y*0.55+7), bp.z+22);
-
-  if (ballAnim.t>=1) {
-    ballAnim.done=true;
-    if (ballAnim.result==='homerun') ballMesh.visible=false;
-    camGoal.set(0,10,30);
-    landBall();
+    if(ud.batPivot) ud.batPivot.rotation.z += (-0.3-ud.batPivot.rotation.z)*4*dt;
+    if(ud.armR) ud.armR.rotation.x += (0-ud.armR.rotation.x)*4*dt;
+    if(ud.armL) ud.armL.rotation.x += (0-ud.armL.rotation.x)*4*dt;
   }
 }
 
-function doSwingAnim(dt) {
-  if (!swinging) return;
-  swingT=Math.min(swingT+dt*4.8,1);
-  if (batGroup.userData.pivot) {
-    batGroup.userData.pivot.rotation.y = -0.9+swingT*3.3;
-    batGroup.userData.pivot.rotation.x = Math.sin(swingT*Math.PI)*0.22;
+function animPitcher(dt) {
+  if(!pitcherMesh) return;
+  var ud=pitcherMesh.userData;
+  if(pitchAnim.on) {
+    pitchAnim.t=Math.min(1, pitchAnim.t+dt/pitchAnim.dur);
+    var p=eio(pitchAnim.t);
+    if(ud.armR) ud.armR.rotation.x=-Math.PI*p;
+    if(ud.legL) ud.legL.rotation.x= 0.5*p;
+    if(pitchAnim.t>=1) pitchAnim.on=false;
+  } else {
+    if(ud.armR) ud.armR.rotation.x+=(0-ud.armR.rotation.x)*3*dt;
+    if(ud.legL) ud.legL.rotation.x+=(0-ud.legL.rotation.x)*3*dt;
   }
-  if (swingT>=1) swinging=false;
 }
 
-function doDefenders(dt) {
-  defenders.forEach((d,i) => {
-    const tgt=defTargets[i]; if(!tgt) return;
-    const dx=tgt.x-d.position.x, dz=tgt.z-d.position.z;
-    const dist=Math.sqrt(dx*dx+dz*dz);
-    if (dist>0.8) {
-      const spd=(d.userData.spd||8)*dt;
-      d.position.x+=dx/dist*spd; d.position.z+=dz/dist*spd;
+function animDefenders(dt) {
+  walkTick+=dt;
+  for(var i=0; i<defMeshes.length; i++) {
+    var d=defMeshes[i];
+    var dx=d.userData.tgtX-d.position.x;
+    var dz=d.userData.tgtZ-d.position.z;
+    var dist=Math.sqrt(dx*dx+dz*dz);
+    var spd=d.userData.running ? 9*FT : 1.5*FT;
+
+    if(dist>0.15*FT) {
+      d.position.x+=(dx/dist)*spd*dt;
+      d.position.z+=(dz/dist)*spd*dt;
       d.rotation.y=Math.atan2(dx,dz);
+      var ws=d.userData.running?9:2.5;
+      var la=Math.sin(walkTick*ws+i*1.8)*0.42;
+      if(d.userData.legL) d.userData.legL.rotation.x= la;
+      if(d.userData.legR) d.userData.legR.rotation.x=-la;
+      var aa=Math.sin(walkTick*ws+i*1.8+Math.PI)*0.35;
+      if(d.userData.armL) d.userData.armL.rotation.x= aa;
+      if(d.userData.armR) d.userData.armR.rotation.x=-aa;
+    } else {
+      var sw=Math.sin(walkTick*0.8+i)*0.04;
+      if(d.userData.armL) d.userData.armL.rotation.x= sw;
+      if(d.userData.armR) d.userData.armR.rotation.x=-sw;
     }
-  });
-}
-
-function doCamera(dt) {
-  camPos.lerp(camGoal, Math.min(dt*3.5,1));
-  camera.position.copy(camPos);
-  if (GS.phase==='ball_flight'&&ballAnim&&!ballAnim.done) {
-    camera.lookAt(ballMesh.position.clone().setY(Math.max(0,ballMesh.position.y*0.8)));
-  } else {
-    camera.lookAt(new THREE.Vector3(0,2,CF_Z*0.18));
   }
 }
 
-function doIdle() {
-  const s=Math.sin(idleT*2);
-  if (pitchGroup) {
-    const u=pitchGroup.userData;
-    if(u.lArm) u.lArm.rotation.x=s*0.07;
-    if(u.rArm) u.rArm.rotation.x=-s*0.07;
+function animBall(dt) {
+  if(!ball.active||ball.phase==='stopped'||ball.phase==='idle') return;
+  ball.t=Math.min(ball.t+dt/ball.duration, 1);
+  var t=ball.t;
+  var x=ball.src.x+(ball.dst.x-ball.src.x)*t;
+  var z=ball.src.z+(ball.dst.z-ball.src.z)*t;
+  var baseY=ball.src.y+(ball.dst.y-ball.src.y)*t;
+  var arcY=ball.apex*4*t*(1-t);
+  var y=Math.max(0.05*FT, baseY+arcY);
+  ballMesh.position.set(x,y,z);
+  ball.pos.copy(ballMesh.position);
+
+  if(ball.phase==='flight') {
+    camDst.tgt.copy(ballMesh.position);
+    camDst.pos.set(
+      ballMesh.position.x*0.25,
+      Math.max(10*FT, ballMesh.position.y+10*FT),
+      ballMesh.position.z+22*FT
+    );
   }
-  defenders.forEach((d,i)=>{
-    if (!defTargets[i]) return;
-    const u=d.userData, w=Math.sin(idleT*5);
-    if(u.lLeg) u.lLeg.rotation.x= w*0.5;
-    if(u.rLeg) u.rLeg.rotation.x=-w*0.5;
-    if(u.lArm) u.lArm.rotation.x=-w*0.4;
-    if(u.rArm) u.rArm.rotation.x= w*0.4;
-  });
+
+  if(t>=1) {
+    if(ball.phase==='pitch') ball.phase='stopped';
+    else { ball.phase='stopped'; ball.active=false; }
+  }
 }
 
-// ── MAIN LOOP ─────────────────────────────────────────────────
+// ── CAMERA ──
+function updateCamera(dt) {
+  var k=1-Math.pow(0.008,dt);
+  camCur.pos.lerp(camDst.pos,k);
+  camCur.tgt.lerp(camDst.tgt,k);
+  camera.position.copy(camCur.pos);
+  camera.lookAt(camCur.tgt);
+}
+
+// ── MAIN LOOP ──
 function loop() {
   requestAnimationFrame(loop);
-  if (!clock||GS.phase==='setup') return;
-  const dt=Math.min(clock.getDelta(),0.05);
-  update(dt);
+  var dt=Math.min(clock.getDelta(),0.1);
+
+  if(timing.active) {
+    timing.cursor+=timing.speed*timing.dir*dt;
+    if(timing.cursor>=1){ timing.cursor=1; timing.dir=-1; }
+    if(timing.cursor<=0){ timing.cursor=0; timing.dir= 1; }
+    updateTimingBar();
+  }
+
+  animBall(dt);
+  animBatter(dt);
+  animPitcher(dt);
+  animDefenders(dt);
+  updateCamera(dt);
+
+  if(canMesh) canMesh.rotation.y+=dt*0.6;
+
   renderer.render(scene,camera);
 }
 </script>
