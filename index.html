@@ -741,16 +741,14 @@ function resetDefs() {
     d.userData.running=false; d.userData.rt=0;
     d.position.set(d.userData.hx,0,d.userData.hz);
     d.rotation.y=Math.PI;
-    d.userData.legL.rotation.x=0; d.userData.legR.rotation.x=0;
-    d.userData.armL.rotation.x=0; d.userData.armR.rotation.x=0;
+    if(d.userData.legLG) { d.userData.legLG.rotation.x=0; d.userData.legRG.rotation.x=0; }
+    if(d.userData.armLG) { d.userData.armLG.rotation.x=0; d.userData.armRG.rotation.x=0; }
   });
 }
 function runAnim(d,t) {
   const o=Math.sin(t*Math.PI*10);
-  d.userData.legL.rotation.x= o*0.65;
-  d.userData.legR.rotation.x=-o*0.65;
-  d.userData.armL.rotation.x=-o*0.45;
-  d.userData.armR.rotation.x= o*0.45;
+  if(d.userData.legLG) { d.userData.legLG.rotation.x= o*0.65; d.userData.legRG.rotation.x=-o*0.65; }
+  if(d.userData.armLG) { d.userData.armLG.rotation.x=-o*0.45; d.userData.armRG.rotation.x= o*0.45; }
 }
 
 // ── BALL ───────────────────────────────────────────────────────────────────────
